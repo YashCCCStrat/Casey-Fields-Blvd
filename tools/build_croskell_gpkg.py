@@ -68,6 +68,68 @@ O2 = O2[(O2.cls != 'pedestrian crossing') | (O2.distance(_rd) < 40)]
 assert (O2.cls == 'pedestrian crossing').sum() == 2, O2.cls.value_counts()
 L4 = attach(gpd.read_file(V2, layer='croskell_plan4_land_as_drawn'), ['table8'])
 F4 = attach(gpd.read_file(V2, layer='croskell_plan4_land_vpa_fus'), ['table8'])
+# ---- each project as the plan draws it: one solid shape per drawn item. Cutting out ID labels, leader lines and the
+# crossing / culvert / node symbols left gaps and holes, so pieces of the same project are joined again (closing by
+# d metres, square corners) and holes and notches are filled. Only pieces of the same project are joined.
+from shapely.ops import nearest_points
+def solid(g, d=4, join=80, w=16, node=0):
+    """Pieces of one drawn item, joined back into one shape: pieces closer than `join` m (minimum spanning tree) get a
+    bridge as wide as the bar (convex hull of both ends within `w` m of the gap); then holes and notches are filled."""
+    g = g.buffer(0).buffer(d, join_style='mitre', mitre_limit=3).buffer(-d, join_style='mitre', mitre_limit=3)   # tidy edges first
+    parts = [p for p in shapely.get_parts(g) if p.area > 50]
+    if not parts: return g
+    edges = sorted((parts[i].distance(parts[j]), i, j) for i in range(len(parts)) for j in range(i + 1, len(parts)))
+    grp = list(range(len(parts))); find = lambda i: i if grp[i] == i else find(grp[i]); bridges = []
+    for dist, i, j in edges:
+        if dist > join or find(i) == find(j): continue
+        grp[find(i)] = find(j); p, q = nearest_points(parts[i], parts[j])
+        bridges.append(shapely.unary_union([parts[i].intersection(p.buffer(w)), parts[j].intersection(q.buffer(w))]).convex_hull)
+        if node: bridges.append(shapely.Point((p.x + q.x) / 2, (p.y + q.y) / 2).buffer(node))   # the intersection's node ring
+    c = shapely.unary_union(parts + bridges).buffer(0.3, join_style='mitre').buffer(-0.3, join_style='mitre')
+    return shapely.unary_union([shapely.Polygon(p.exterior) for p in shapely.get_parts(c) if p.area > 50]).simplify(0.5)
+# node rings on Plan 2: orange discs with a white dot at each intersection; added to the intersection's shape
+d2 = rasterio.open(G / 'georeferenced/ICO3_plan2.tif'); a2 = np.dstack([d2.read(i) for i in (1, 2, 3)])
+l2 = cv2.cvtColor(a2, cv2.COLOR_RGB2LAB).astype(np.float32)
+org = (np.sqrt(((l2 - np.median(l2[1833:1841, 175:220].reshape(-1, 3), axis=0)) ** 2).sum(-1)) < 30).astype(np.uint8)
+org[:260] = 0; org[1660:, :780] = 0
+wht = ((a2.min(-1) > 235) & (cv2.dilate(org, np.ones((5, 5), np.uint8)) > 0)).astype(np.uint8)
+filled = org.copy(); cs, _ = cv2.findContours(org, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE); cv2.drawContours(filled, cs, -1, 1, -1)
+holes = ((filled > 0) & (org == 0)).astype(np.uint8)
+n, cc, st, cen = cv2.connectedComponentsWithStats(holes, 8)
+RINGS = [shapely.Point(d2.transform * (cen[i][0] + 0.5, cen[i][1] + 0.5)) for i in range(1, n) if 15 <= st[i, 4] <= 250 and 0.6 < st[i, 2] / st[i, 3] < 1.6]
+print(f'{len(RINGS)} intersection node rings found on Plan 2')
+def strip_smooth(poly, step=4, win=9):
+    """A road strip with bites taken out by printed lettering: cut it into slices across its long axis and give each
+    slice the widest extent found within `win` neighbouring slices, so the bites are filled but width and curve stay."""
+    import math
+    rect = poly.minimum_rotated_rectangle; c = list(rect.exterior.coords)
+    e = max([(c[i], c[i + 1]) for i in range(4)], key=lambda s_: math.dist(*s_)); ang = math.atan2(e[1][1] - e[0][1], e[1][0] - e[0][0])
+    o = poly.centroid; r = shapely.affinity.rotate(poly, -ang, origin=o, use_radians=True)
+    x0, y0, x1, y1 = r.bounds; xs = np.arange(x0, x1 + step, step); lo, hi = [], []
+    for a_ in xs:
+        sl = r.intersection(shapely.box(a_, y0 - 1, a_ + step, y1 + 1))
+        lo.append(sl.bounds[1] if not sl.is_empty else np.nan); hi.append(sl.bounds[3] if not sl.is_empty else np.nan)
+    lo, hi = pd.Series(lo).rolling(win, center=True, min_periods=1).min(), pd.Series(hi).rolling(win, center=True, min_periods=1).max()
+    ok = lo.notna() & hi.notna(); pts = [(a_, h) for a_, h, k in zip(xs, hi, ok) if k] + [(a_ + step, l) for a_, l, k in zip(xs, lo, ok) if k][::-1]
+    pts = [(a_, h) for a_, h, k in zip(xs, hi, ok) if k] + [(xs[ok.values][-1] + step, hi[ok].iloc[-1])] + [(a_, l) for a_, l, k in list(zip(xs, lo, ok))[::-1] if k]
+    out = shapely.Polygon(pts).buffer(0)
+    return shapely.affinity.rotate(out, ang, origin=o, use_radians=True).intersection(poly.buffer(25))
+import shapely.affinity
+C2 = C2.copy()
+C2['geometry'] = [(solid(g, join=200, node=13) if p.startswith('CK-IN') else solid(g)) if g.geom_type.endswith('Polygon') else g for p, g in zip(C2.project_id, C2.geometry)]
+for i, r in C2[C2.project_id.str.startswith('CK-IN') & C2.geom_type.str.contains('Polygon')].iterrows():
+    near = [q for q in RINGS if q.distance(r.geometry) < 25]
+    if near: C2.at[i, 'geometry'] = solid(shapely.unary_union([r.geometry] + [q.buffer(11) for q in near]), join=60, w=12)   # ring radius ~11 m at 1:15,000
+print('rings added:', {p: sum(q.distance(g) < 25 for q in RINGS) for p, g in zip(C2.project_id, C2.geometry) if p.startswith('CK-IN')})
+L4 = L4.copy(); pspg = psp.geometry.iloc[0]
+road = solid(shapely.unary_union(list(L4[L4.project_id.isin(['CK-RD-01', 'CK-OPPL-RD-01'])].geometry)), d=7)   # 7 m: smooths the bites left by the street-name lettering
+L4.loc[L4.project_id == 'CK-RD-01', 'geometry'] = [solid(road.intersection(pspg), 1, 0)]        # inner land: inside the PSP
+L4.loc[L4.project_id == 'CK-OPPL-RD-01', 'geometry'] = [strip_smooth(solid(road.difference(pspg), 1, 0)).difference(pspg)]   # outer land: outside it; slices fill the bites of the street-name lettering
+other = ~L4.project_id.isin(['CK-RD-01', 'CK-OPPL-RD-01'])
+L4.loc[other, 'geometry'] = [solid(g, 9) for g in L4[other].geometry]                           # parks, reserves, intersections
+L4['drawn_ha'] = (L4.area / 1e4).round(4)
+for nm, g in (('Plan 2', C2), ('Plan 4', L4)):
+    print(nm, 'parts per project:', {p: len(shapely.get_parts(x)) for p, x in zip(g.project_id, g.geometry) if x.geom_type.endswith('Polygon')})
 for g in (L4, F4):
     g['land_type'] = g.project_id.map(lambda p: 'Outer public purpose land (road)' if 'OPPL' in p else 'Land for road' if '-RD-' in p else 'Land for intersection' if '-IN-' in p else 'Land for recreation and open space')
     g.insert(1, 'map', 'Plan 4 · Public land provision (printed p. 15)')
