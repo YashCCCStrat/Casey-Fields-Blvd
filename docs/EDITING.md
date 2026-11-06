@@ -30,14 +30,12 @@ Shape fields: `project_id` (links to the table), `map`, `cls` (legend class), `l
 
    | Button | Rows | Format |
    |---|---|---|
-   | **Export to Excel** (header) | Every row of the plan areas switched on in the header; table filters are ignored | Excel: your register schema + *Details* (every column, with Row ID) + the printed tables + *About* |
-   | **Export shown rows** (table bar) | Only the rows the table shows now: search, plan map, category chips, *only projects in map view*, drawn-shape filter; in the table's sort order | Same Excel layout |
+   | **Export to Excel** (table bar) | The rows the table shows now: search, plan map, category chips, *only projects in map view*, drawn-shape filter; in the table's sort order. With no filter on, every row of the plan areas switched on in the header | Excel: your register schema + *Details* (every column, with Row ID) + the printed tables + *About* (records which filters were on) |
    | **GIS export** | Rows shown, one feature per row with its shape | GeoJSON (opens in QGIS) |
    | **Changes for repo** | Only what you changed: edited rows and added shapes | GeoJSON for `gis/edit/inbox/` |
 
-   With no filter on, the two Excel exports give the same rows.
-6. **Import edits** (header) restores your changes into this browser, e.g. on another computer or after clearing it:
-   - an **Excel file exported by this app** (either export): values in its *Details* sheet that differ from the plan become
+6. **Import edits** (table bar, next to Export to Excel) restores your changes into this browser, e.g. on another computer or after clearing it:
+   - an **Excel file exported by this app**: values in its *Details* sheet that differ from the plan become
      edits, matched by *Row ID*. Every column counts. Rows of added features are not in the plan, so they are skipped;
      the other sheets are ignored. Excel files not made by this app (no *Details* sheet) are refused.
    - a **Changes for repo** file: its edits and added shapes come back. Shapes already in the browser are skipped, so

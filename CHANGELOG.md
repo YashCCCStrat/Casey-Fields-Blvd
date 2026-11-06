@@ -1,6 +1,10 @@
 # Changelog
 
-## Latest – import and export clarified
+## Latest – one Excel export
+### Changed
+- The header's **Export to Excel** button is removed: it gave the same file as *Export shown rows* unless a filter was on. The table bar's button is now **Export to Excel** and exports the rows the table shows (everything when nothing is filtered). **Import edits** moved next to it.
+
+## Import and export clarified
 ### Changed
 - **Import edits** also takes a *Changes for repo* file (restores edits and added shapes, no duplicates on re-import); for Excel files it now says how many rows were not found, and refuses files without the app's *Details* sheet. Its tooltip no longer says it only covers Land acquired / Status (it restores every column).
 - Tooltips on **Export to Excel** (all rows of the areas switched on, filters ignored) and **Export shown rows** (only the filtered rows, in table order). `docs/EDITING.md` has a table of the exports and what Import accepts.

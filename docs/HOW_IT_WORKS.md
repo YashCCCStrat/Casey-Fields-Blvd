@@ -57,8 +57,8 @@
   0.5927 ha, CF01 0.54 ha vs 0.6 ha.
 
 ## Export and import
-- Export to Excel uses every row of the areas switched on; Export shown rows uses the table's current filter and sort.
-  Both write the owner's register schema (`data/reference/export_schema.xlsx`) and a *Details* sheet with `Row ID` and
+- Export to Excel uses the table's current filter and sort (all rows of the areas switched on when nothing is filtered).
+  It writes the owner's register schema (`data/reference/export_schema.xlsx`) and a *Details* sheet with `Row ID` and
   every column.
 - Import edits: Excel → per row (by `Row ID`, with or without the area prefix), each column whose value differs from the
   plan's becomes an edit. Changes for repo GeoJSON → `change: edit` features merge into the edits; `change: new` features

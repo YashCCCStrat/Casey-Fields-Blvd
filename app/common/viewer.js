@@ -48,8 +48,8 @@ document.title = 'Casey Fields Boulevard Plans';
 document.body.innerHTML = `
 <header class="top"><div class="brand"><div class="logo"></div><div><h1>Casey Fields Boulevard – contribution plans</h1><p>Plan maps placed on the ground, linked to each plan's project tables</p></div></div>
   <div class="areas" id="areas"></div><div class="sp"></div>
-  <button class="btn" id="bImp" title="Restore edits from a file this app made: an Excel export (all edited columns, matched by Row ID) or a Changes for repo file (edits and added shapes)">Import edits</button><input type="file" id="fImp" accept=".xlsx,.geojson,.json" hidden>
-  <button class="btn primary" id="bExp" title="Every row of the plan areas switched on in the header, ignoring the table filters">Export to Excel</button></header>
+
+</header>
 <div id="wrap">
   <div id="map">
     <aside id="panel" class="card"><div class="hd" id="phd"><span>Plan maps &amp; layers</span><span class="chev">▾</span></div><div class="bd">
@@ -79,7 +79,8 @@ document.body.innerHTML = `
       <button class="btn" id="bUndo" title="Discard all edits made in this browser" hidden>Discard edits</button>
       <span class="summary" id="summary"></span>
       <div class="pop" id="colPop"><button class="btn" id="bCols">Columns ▾</button><div class="menu" id="colMenu"></div></div>
-      <button class="btn" id="bExpF" title="Only the rows the table shows now (search, plan map, categories, map view and drawn-shape filters), in the table's sort order">Export shown rows</button>
+      <button class="btn primary" id="bExpF" title="Excel in your register schema: the rows the table shows now (search, plan map, categories, map view and drawn-shape filters, in table order). With no filter, every row of the plan areas switched on.">Export to Excel</button>
+      <button class="btn" id="bImp" title="Restore edits from a file this app made: an Excel export (all edited columns, matched by Row ID) or a Changes for repo file (edits and added shapes)">Import edits</button><input type="file" id="fImp" accept=".xlsx,.geojson,.json" hidden>
       <button class="btn" id="bChg" title="Download your edits and added features for the repository: save into gis/edit/inbox/ and push (see docs/EDITING.md)">Changes for repo</button>
       <button class="btn" id="bGis" title="Download the shapes of the rows shown, with their table attributes and your edits, as GeoJSON (opens in QGIS; save as shapefile or GeoPackage there)">GIS export</button>
     </div>
@@ -303,8 +304,7 @@ function exportXlsx(rows, label) {
   n['!cols'] = [{wch: 14}, {wch: 120}]; XLSX.utils.book_append_sheet(wb, n, 'About');
   XLSX.writeFile(wb, `casey-fields-blvd-projects-${today}.xlsx`);
 }
-$('bExp').onclick = () => exportXlsx(ROWS.filter(r => AON.has(r.area)), 'all rows of the plan areas shown');
-$('bExpF').onclick = () => exportXlsx(filtered(), 'rows shown');
+$('bExpF').onclick = () => { const rs = filtered(); exportXlsx(rs, rs.length === ROWS.filter(r => AON.has(r.area)).length ? 'all rows of the plan areas shown' : 'rows shown by the table filters'); };
 $('bGis').onclick = () => {   // GeoJSON: every project shape with its table attributes (edits included), one feature per table row; opens in QGIS
   const rows = filtered(), today = new Date().toISOString().slice(0, 10), out = [];
   rows.forEach(r => (FBYKEY[r.key] || []).forEach(f => { const p = {plan_area: AREA[r.area].name, plan_map: D.maps.find(m => m.id === r.map)?.title || '', legend: CLS[f.properties.cls]?.label, row_id: r.rid.split(':').slice(1).join(':')};
