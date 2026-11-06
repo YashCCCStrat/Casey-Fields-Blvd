@@ -1,0 +1,5 @@
+vendor/glyphs.js contains SDF glyph ranges 0-255, 256-511, 8192-8447, 8448-8703 and 8704-8959, base64-encoded, taken
+unchanged from the npm package smp-noto-glyphs 2.0.0 (https://github.com/digidem/styled-map-package), MIT licence.
+
+The glyphs are rendered from GoNotoKurrent (https://github.com/satbyy/go-noto-universal), a merge of the Noto Sans fonts,
+which are licensed under the SIL Open Font License, Version 1.1 (https://openfontlicense.org). Noto is a trademark of Google LLC.

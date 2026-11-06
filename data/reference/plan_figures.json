@@ -1,0 +1,93 @@
+{
+ "_note": "Croskell ICP plan maps. affine maps embedded-image pixel centres (x, y, 1) to GDA2020 / MGA55 metres (rows: coefficients of x, y, 1). Fitted by tools/georef.py to the plan PSP boundary line (navy dashed) against the VPA PSP 1051 boundary.",
+ "ICO3_plan2": {
+  "title": "Plan 2 \u00b7 Standard and supplementary levy transport construction projects",
+  "pdf": "sources/pdfs/Croskell-Employment-Infrastructure-Contributions-Plan-October-2025.pdf",
+  "pdf_page": 12,
+  "printed_page": 8,
+  "image_index": 0,
+  "fit_to": "psp:1051",
+  "boundary": "navy",
+  "region": [
+   560,
+   260,
+   3460,
+   1660
+  ],
+  "affine": [
+   [
+    1.2703079450656352,
+    0.0011221787078729956
+   ],
+   [
+    -0.0005195450990693002,
+    -1.272406544253325
+   ],
+   [
+    349784.28077876125,
+    5784022.231817648
+   ]
+  ],
+  "fit": "boundary pixels: median 2.4 m, 90th percentile 4.5 m from the VPA PSP boundary (39972 px)"
+ },
+ "ICO3_plan3": {
+  "title": "Plan 3 \u00b7 Standard levy community & recreation construction projects",
+  "pdf": "sources/pdfs/Croskell-Employment-Infrastructure-Contributions-Plan-October-2025.pdf",
+  "pdf_page": 17,
+  "printed_page": 13,
+  "image_index": 0,
+  "fit_to": "psp:1051",
+  "boundary": "navy",
+  "region": [
+   560,
+   260,
+   3460,
+   1660
+  ],
+  "affine": [
+   [
+    1.2703619903662127,
+    0.0011119371400109272
+   ],
+   [
+    -0.0006105941835471462,
+    -1.2724125620080151
+   ],
+   [
+    349784.2940323633,
+    5784022.229572659
+   ]
+  ],
+  "fit": "boundary pixels: median 2.4 m, 90th percentile 4.5 m from the VPA PSP boundary (42424 px)"
+ },
+ "ICO3_plan4": {
+  "title": "Plan 4 \u00b7 Public land provision",
+  "pdf": "sources/pdfs/Croskell-Employment-Infrastructure-Contributions-Plan-October-2025.pdf",
+  "pdf_page": 19,
+  "printed_page": 15,
+  "image_index": 0,
+  "fit_to": "psp:1051",
+  "boundary": "navy",
+  "region": [
+   560,
+   260,
+   3460,
+   1660
+  ],
+  "affine": [
+   [
+    1.2703475972816343,
+    0.0011303309421275666
+   ],
+   [
+    -0.0006515265033167015,
+    -1.2723739793979993
+   ],
+   [
+    349784.38542506035,
+    5784022.168768534
+   ]
+  ],
+  "fit": "boundary pixels: median 2.4 m, 90th percentile 4.5 m from the VPA PSP boundary (42198 px)"
+ }
+}

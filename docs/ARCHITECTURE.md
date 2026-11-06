@@ -1,5 +1,14 @@
 # Architecture
 
-- `sources/pdfs/` → `tools/` scripts → `gis/<plan>/` (GeoTIFFs, GeoPackage, QGIS project).
-- Plan maps are placed with an affine fitted to the plan's own precinct-boundary line (VPA PSP boundary): `tools/georef_figure_from_contribution_plans.py` (from Contribution-Plans).
-- Attributes come from the plans' printed tables, joined by the printed project ID.
+```
+sources/pdfs/ ── tools/georef.py ──────────────► gis/croskell/georeferenced/*.tif
+data/reference/croskell/table*.csv ─┐
+gis/croskell/v2_from_contribution_plans/ ─┼─ tools/build_croskell_gpkg.py ─► gis/croskell/croskell.gpkg
+gis/croskell/vpa_fus_croskell.gpkg ──┘                                        │
+                                              tools/build_croskell_app.py ◄─┘ ─► app/croskell/data.js (+ index.html)
+```
+- `data/reference/plan_figures.json`: each plan map's PDF page and affine (pixels → MGA55).
+- `data/reference/export_schema.xlsx`: the owner's project-register layout used by the app's Excel export.
+- Joins: everything by the printed project ID (`CK-…`); map features also carry which plan map they belong to.
+- The app is static (no server): MapLibre, SheetJS and the fonts are vendored in `app/croskell/vendor/`; edits to
+  Land acquired / Status live in the browser (localStorage) and travel via the exported Excel file.

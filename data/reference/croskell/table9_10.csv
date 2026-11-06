@@ -1,0 +1,3 @@
+﻿class_of_development,contribution_land_ha,transport_ippl_ha,res_cr_ippl_ha,ci_cr_ippl_ha,total_ippl_ha,total_oppl_ha,total_ppl_ha,ippl_le_icp_pct_ha,ippl_over_icp_pct_ha,credit_over_land_aud,oppl_value_aud,total_equalisation_aud,equalisation_rate_aud_per_ha,icp_land_contribution_pct,source
+Residential,33.492,0.7298,3.2412,,3.971,0.1824,4.1534,2.6492,2.1672,12852819.03,590492.28,14678610.83,5540785.87,12.4,"Croskell (Employment) ICP Oct 2025, Tables 9 and 10, printed 17-18 (PDF 21-22)"
+Commercial and Industrial,175.8056,3.8307,,3.3144,7.1451,0.9576,8.1027,1.5973,0.9393,6986215.65,3099604.87,8850521.0,5540785.87,4.61,"Croskell (Employment) ICP Oct 2025, Tables 9 and 10, printed 17-18 (PDF 21-22)"
