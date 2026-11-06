@@ -1,6 +1,10 @@
 # Changelog
 
-## Latest – editing, QGIS round trip, drawing
+## Latest – owner corrections (Collison)
+### Fixed
+- Five Collison shapes redrawn to the owner's marked-up locations: **CF01** (0.54 ha), **IN04**, **DR10** (now including its western end, 0.70 ha), **DR16** (along the printed pipe dots south of the old line and up the west side of DR09, 317 m) and **DR17** (onto the printed dots east of the old line, from DR14 to channel DR07, 51 m). Kept in `data/reference/collison/owner_revisions.geojson` so a re-seed keeps them.
+
+## Editing, QGIS round trip, drawing
 ### Added
 - **Edit every column** in the table (Edit table switch); Excel export and Import edits carry all columns.
 - **Draw to add a feature** (point, line or polygon) on the map: a form fills in the new project row (plan area, plan map, legend class, ID, title, costs, status …); kept in the browser, deletable from the project card. New legend class *Added feature* per plan map.

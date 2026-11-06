@@ -61,6 +61,13 @@ def _seed(area, data):
             con.execute(f'DROP TABLE IF EXISTS "{l}"'); [con.execute(f'DELETE FROM {t} WHERE table_name=?', (l,)) for t in ('gpkg_contents', 'gpkg_geometry_columns', 'gpkg_ogr_contents')]
         con.commit(); con.close()
     g = gpd.GeoDataFrame.from_features(data['features'], crs=4326).to_crs(7855)
+    rev = ROOT / f'data/reference/{area}/owner_revisions.geojson'   # shapes the owner redrew: they replace the extracted ones
+    if rev.exists():
+        r = gpd.read_file(rev).to_crs(7855)
+        for pid, geom in zip(r.project_id, r.geometry):
+            m = g.project_id == pid
+            if m.sum() == 1: g.loc[m, 'geometry'] = geom
+            else: print(f'owner revision {pid}: {m.sum()} shapes in the extraction - not applied')
     g['legend'] = g.cls.map(lambda c: data['classes'][c]['label'])
     g['map'] = g['map'].fillna('').replace('', 'context')
     g['title'] = None; g['category'] = None; g['note'] = None   # filled in only for features added in QGIS (a new table row is made from them)

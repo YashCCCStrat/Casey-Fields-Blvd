@@ -43,3 +43,15 @@
   *Added in QGIS – fill in details*; an empty `map` or `cls` is filled in from the layer name.
 - **Shapefile export** joins each shape to its table rows on project ID **and plan map** (a Croskell Plan 2 road shape
   carries its construction rows; its Plan 4 land shape carries the land row).
+
+## Owner corrections from marked-up screenshots
+- The owner marked revised locations in red on app screenshots. Each screenshot was tied to the ground with a
+  similarity transform (scale, rotation, offset in Web Mercator): first from the selected project's amber highlight,
+  then refined so the outlines of all road and drainage shapes, and the highlight, sit on their edges in the screenshot
+  (typical residual 1–2 px, under 1.5 m).
+- Polygons (CF01, IN04, DR10): the red outline, closed and filled. Pipes (DR16, DR17): the red loop marks the printed
+  blue pipe dots it encloses; DR16 is two straight legs fitted to those dots (RANSAC) meeting at the corner, DR17 the
+  dots' centre line with its ends snapped to DR14 and channel DR07.
+- Stored in `data/reference/collison/owner_revisions.geojson` (EPSG:4326); `tools/appdata.py` applies it when the
+  GeoPackage is re-seeded. Areas and lengths no longer all match the tables: DR16 317 m vs 259.2 m in T6, DR10 0.70 ha vs
+  0.5927 ha, CF01 0.54 ha vs 0.6 ha.

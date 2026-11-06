@@ -1,6 +1,7 @@
 # Project log
 
 ## Latest
+- Owner sent revised locations for DR16, CF01, DR17, IN04 and DR10 (red outlines on app screenshots). **Decision:** owner-drawn shapes override the extraction, as a reference file re-applied on re-seed, rather than only editing the GeoPackage. Owner's drawing wins over T6 lengths and areas where they differ (DR16, DR10); flagged to the owner.
 - Owner wants to edit every column, keep the shapes as shapefiles with their table for QGIS, make them more accurate there and push back; add points, lines and polygons with an automatic table row; and filter projects by drawing. **Decision:** one GeoPackage (`gis/edit/`) is the editable source of truth; a GitHub Action rebuilds the app and shapefiles from it. Shapefiles are export-only (10-character field names, no multi-layer joins). App changes reach the repository as a GeoJSON file in `gis/edit/inbox/` that the Action applies, because the static app cannot write to GitHub without a token in the page.
 - The Action cannot be tested from the sandbox; its steps were run locally (apply, check, build, export) on a test inbox file and a QGIS-drawn point.
 
