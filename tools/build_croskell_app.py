@@ -54,6 +54,20 @@ for lyr, m in LAY.items():
         props = dict(layer=lyr, map=m, project_id=pid, kind=getattr(r, 'land_type', None) or getattr(r, 'type', None) or getattr(r, 'cls', None) or ('PSP boundary' if m == 'psp' else None),
                      category=cat(pid) if pid else None)
         feats.append(dict(type='Feature', geometry=json.loads(gpd.GeoSeries([r.geometry]).to_json())['features'][0]['geometry'], properties=props))
+# culverts: rotate the plan's culvert symbol to run along the road / path it sits on (bearing of the nearby RD-01 or SUP-01)
+import shapely, math
+_g = gpd.read_file(GP, layer='plan2_construction_points'); _a = gpd.read_file(GP, layer='plan2_construction_areas'); _l = gpd.read_file(GP, layer='plan2_construction_lines')
+_along = {'CK-CU-01': _a[_a.project_id == 'CK-RD-01'].geometry.iloc[0], 'CK-CU-02': _l[_l.project_id == 'CK-SUP-01'].geometry.iloc[0]}
+ROT = {}
+for r in _g[_g.project_id.str.startswith('CK-CU')].itertuples():
+    near = _along[r.project_id].intersection(r.geometry.buffer(60))
+    rect = (near if not near.is_empty else _along[r.project_id]).minimum_rotated_rectangle
+    c = list(rect.exterior.coords); e = max([(c[i], c[i + 1]) for i in range(4)], key=lambda s_: math.dist(*s_))
+    bearing = math.degrees(math.atan2(e[1][0] - e[0][0], e[1][1] - e[0][1])) % 180
+    ROT[r.project_id] = round(bearing - 90, 1)        # the icon is drawn east-west
+for f in feats:
+    if f['properties']['project_id'] in ROT and f['properties']['map'] == 'plan2': f['properties']['rot'] = ROT[f['properties']['project_id']]
+print('culvert rotation', ROT)
 for f in feats:   # round coordinates to ~1 cm
     def rnd(c): return [rnd(x) for x in c] if isinstance(c[0], list) else [round(c[0], 7), round(c[1], 7)]
     f['geometry']['coordinates'] = rnd(f['geometry']['coordinates'])

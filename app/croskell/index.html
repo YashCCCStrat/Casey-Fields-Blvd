@@ -132,24 +132,26 @@ function svgImage(svg, color, size = 30) {   // Maki icons (CC0), drawn from the
 function canvasImage(draw, w = 28, h = 28) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return c.getContext('2d').getImageData(0, 0, w, h); }
 
 let READY = false; const ORIGF = {};
-const FILT_IDS = ['p2-area', 'p2-edge', 'p2-line', 'p2-pt', 'p2-ring', 'p3-area', 'p3-icon', 'p4-area', 'p4-hatch', 'p4-edge', 'p4f-line', 'labels'];
-const LAYERS = [   // [toggle label, layer ids, on]
-  ['Plan 2 · transport construction', ['p2-area', 'p2-line', 'p2-pt'], true],
-  ['Plan 2 · crossings & VDP cable (not ICP items)', ['p2o-line', 'p2o-pt'], true],
-  ['Plan 3 · community & recreation', ['p3-area'], true],
-  ['Plan 4 · public land as drawn', ['p4-area', 'p4-hatch'], true],
-  ['Plan 4 · public land, VPA surveyed', ['p4f-line'], false],
-  ['Project ID labels', ['labels'], true],
-  ['PSP 1051 boundary', ['psp'], true]];
+const FILT_IDS = ['p2-area', 'p2-edge', 'p2-line', 'p2-pt', 'p2-ring', 'p3-area', 'p3-edge', 'p4-area', 'p4-hatch', 'p4-edge', 'p4f-line', 'labels'];
+const LAYERS = [   // [toggle label, layer ids, on, plan map it belongs to]
+  ['Plan 2 · transport construction', ['p2-area', 'p2-edge', 'p2-line', 'p2-pt', 'p2-ring'], true, 'plan2'],
+  ['Plan 2 · pedestrian crossings & VDP cable (not ICP items)', ['p2o-line', 'p2o-pt'], true, 'plan2'],
+  ['Plan 3 · community & recreation', ['p3-area', 'p3-edge'], true, 'plan3'],
+  ['Plan 4 · public land as drawn', ['p4-area', 'p4-hatch', 'p4-edge'], true, 'plan4'],
+  ['Plan 4 · public land, VPA surveyed', ['p4f-line'], false, 'plan4fus'],
+  ['Project ID labels', ['labels'], true, ''],
+  ['PSP 1051 boundary', ['psp'], true, '']];
 
 map.on('load', async () => { try {
   map.addSource('f', {type: 'geojson', data: D.features});
   for (const [k, im] of Object.entries(D.images)) map.addSource('img-' + k, {type: 'image', url: im.img, coordinates: im.coords});
   for (const k of Object.keys(D.images)) map.addLayer({id: 'img-' + k, type: 'raster', source: 'img-' + k, layout: {visibility: 'none'}, paint: {'raster-opacity': .7, 'raster-fade-duration': 0}});
-map.addImage('ped', svgImage(D.icons['square-stroke'], '#8a8c1f'));
-  map.addImage('cu', canvasImage((x, w, h) => { x.strokeStyle = '#111'; x.lineWidth = 3; x.beginPath(); x.moveTo(5, 6); x.quadraticCurveTo(14, 14, 23, 6); x.moveTo(5, 22); x.quadraticCurveTo(14, 14, 23, 22); x.stroke(); }));
-  map.addImage('xing', canvasImage((x) => { x.strokeStyle = '#f7941d'; x.lineWidth = 5; x.beginPath(); x.moveTo(6, 6); x.lineTo(22, 22); x.moveTo(22, 6); x.lineTo(6, 22); x.stroke(); }));
-  map.addImage('pitch', svgImage(D.icons['pitch'], '#2f4a14', 26)); map.addImage('park', svgImage(D.icons['park'], '#2f4a14', 26));
+  // symbols as printed on Plan 2 (legend): olive square with white centre, black culvert symbol, orange X with white outline
+  map.addImage('ped', canvasImage((x) => { x.fillStyle = '#fff'; x.fillRect(5, 5, 18, 18); x.fillStyle = '#a5a831'; x.fillRect(7, 7, 14, 14); x.fillStyle = '#fff'; x.fillRect(11, 11, 6, 6); }));
+  map.addImage('cu', canvasImage((x) => { x.strokeStyle = '#111'; x.lineWidth = 3.2; x.lineCap = 'round'; x.lineJoin = 'round';
+    x.beginPath(); x.moveTo(3, 7); x.lineTo(10, 13); x.lineTo(30, 13); x.lineTo(37, 7); x.moveTo(3, 27); x.lineTo(10, 21); x.lineTo(30, 21); x.lineTo(37, 27); x.stroke(); }, 40, 34));
+  map.addImage('xing', canvasImage((x) => { x.lineCap = 'butt'; x.strokeStyle = '#fff'; x.lineWidth = 9; x.beginPath(); x.moveTo(6, 6); x.lineTo(24, 24); x.moveTo(24, 6); x.lineTo(6, 24); x.stroke();
+    x.strokeStyle = '#f7941d'; x.lineWidth = 5; x.beginPath(); x.moveTo(7, 7); x.lineTo(23, 23); x.moveTo(23, 7); x.lineTo(7, 23); x.stroke(); }, 30, 30));
   map.addImage('hatch', canvasImage((x, w, h) => { x.fillStyle = 'rgba(166,17,79,.55)'; x.fillRect(0, 0, w, h); x.strokeStyle = '#111'; x.lineWidth = 3; for (let i = -h; i < w; i += 9) { x.beginPath(); x.moveTo(i, h); x.lineTo(i + h, 0); x.stroke(); } }, 18, 18));
   const hov = ['boolean', ['feature-state', 'hover'], false], sel = ['boolean', ['feature-state', 'sel'], false];
   const lw = (n, h) => ['case', sel, h + 2, hov, h, n];
@@ -161,14 +163,14 @@ map.addImage('ped', svgImage(D.icons['square-stroke'], '#8a8c1f'));
   map.addLayer({id: 'p4-edge', type: 'line', source: 'f', filter: isMap('plan4'), paint: {'line-color': ['case', sel, '#ffb000', hov, '#2f7fbf', '#222'], 'line-width': lw(.8, 3)}});
   map.addLayer({id: 'p4f-line', type: 'line', source: 'f', filter: isMap('plan4fus'), layout: {visibility: 'none'}, paint: {'line-color': ['case', sel, '#ffb000', hov, '#2f7fbf', '#0a7d5f'], 'line-width': lw(1.8, 3.5), 'line-dasharray': [2, 1]}});
   map.addLayer({id: 'p3-area', type: 'fill', source: 'f', filter: isMap('plan3'), paint: {'fill-color': '#6f8e3d', 'fill-opacity': ['case', sel, .85, hov, .75, .55], 'fill-outline-color': '#2f4a14'}});
-  map.addLayer({id: 'p3-icon', type: 'symbol', source: 'f', filter: isMap('plan3'), layout: {'icon-image': 'pitch', 'icon-allow-overlap': true}});
+  map.addLayer({id: 'p3-edge', type: 'line', source: 'f', filter: isMap('plan3'), paint: {'line-color': ['case', sel, '#ffb000', hov, '#2f7fbf', '#2f4a14'], 'line-width': lw(1.2, 3.5)}});
   map.addLayer({id: 'p2-area', type: 'fill', source: 'f', filter: ['all', isMap('plan2'), mtype('Polygon', 'MultiPolygon')], paint: {'fill-color': ['match', ['get', 'category'], ...Object.entries(COL).flat(), '#888'], 'fill-opacity': ['case', sel, 1, hov, .95, .85]}});
   map.addLayer({id: 'p2-edge', type: 'line', source: 'f', filter: ['all', isMap('plan2'), mtype('Polygon', 'MultiPolygon')], paint: {'line-color': ['case', sel, '#ffb000', hov, '#2f7fbf', 'rgba(0,0,0,0)'], 'line-width': lw(0, 4)}});
   map.addLayer({id: 'p2-line', type: 'line', source: 'f', filter: ['all', isMap('plan2'), mtype('LineString', 'MultiLineString')], layout: {'line-cap': 'round'}, paint: {'line-color': ['case', sel, '#ffb000', hov, '#2f7fbf', '#111'], 'line-width': lw(4, 6), 'line-dasharray': [.1, 2]}});
-  map.addLayer({id: 'p2-pt', type: 'symbol', source: 'f', filter: ['all', isMap('plan2'), mtype('Point', 'MultiPoint')], layout: {'icon-image': ['match', ['get', 'category'], 'Pedestrian signals', 'ped', 'cu'], 'icon-allow-overlap': true}});
+  map.addLayer({id: 'p2-pt', type: 'symbol', source: 'f', filter: ['all', isMap('plan2'), mtype('Point', 'MultiPoint')], layout: {'icon-image': ['match', ['get', 'category'], 'Pedestrian signals', 'ped', 'cu'], 'icon-allow-overlap': true, 'icon-rotate': ['coalesce', ['get', 'rot'], 0], 'icon-rotation-alignment': 'map', 'icon-size': ['interpolate', ['linear'], ['zoom'], 13, .7, 16, 1.1, 18, 2.2]}});
   map.addLayer({id: 'p2-ring', type: 'circle', source: 'f', filter: ['all', isMap('plan2'), mtype('Point', 'MultiPoint')], paint: {'circle-radius': 16, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-width': ['case', sel, 3, hov, 3, 0], 'circle-stroke-color': ['case', sel, '#ffb000', '#2f7fbf']}});
   map.addLayer({id: 'p2o-line', type: 'line', source: 'f', filter: ['all', isMap('plan2other'), mtype('LineString', 'MultiLineString')], paint: {'line-color': '#d42b49', 'line-width': 2}});
-  map.addLayer({id: 'p2o-pt', type: 'symbol', source: 'f', filter: ['all', isMap('plan2other'), mtype('Point', 'MultiPoint')], layout: {'icon-image': 'xing', 'icon-allow-overlap': true}});
+  map.addLayer({id: 'p2o-pt', type: 'symbol', source: 'f', filter: ['all', isMap('plan2other'), mtype('Point', 'MultiPoint')], layout: {'icon-image': 'xing', 'icon-allow-overlap': true, 'icon-size': ['interpolate', ['linear'], ['zoom'], 13, .7, 16, 1.1, 18, 2.2]}});
   map.addLayer({id: 'labels', type: 'symbol', source: 'f', filter: ['all', ['has', 'project_id'], ['!=', ['get', 'map'], 'plan4fus']], layout: {'text-field': ['slice', ['get', 'project_id'], 3], 'text-font': ['Noto Sans Regular'], 'text-size': 11, 'text-offset': [0, 1.4], 'text-padding': 3}, paint: {'text-color': '#1f2a2e', 'text-halo-color': '#fff', 'text-halo-width': 1.8}});
   FILT_IDS.forEach(id => ORIGF[id] = map.getFilter(id)); READY = true;
   buildLayers(); setOverlay('plan2'); fitAll(); applyFilters();
@@ -192,13 +194,27 @@ map.addImage('ped', svgImage(D.icons['square-stroke'], '#8a8c1f'));
 } catch (err) { console.error('setup failed: ' + err.message + ' ' + err.stack); } });
 function buildLayers() {
   $('lyr').innerHTML = LAYERS.map(([lab, ids, on], i) => `<label><input type="checkbox" data-i="${i}" ${on ? 'checked' : ''}> ${esc(lab)}</label>`).join('');
-  $('lyr').querySelectorAll('input').forEach(c => { c.onchange = () => { LAYERS[c.dataset.i][1].forEach(id => vis(id, c.checked)); if (LAYERS[c.dataset.i][1].includes('p3-area')) vis('p3-icon', c.checked); if (LAYERS[c.dataset.i][1].includes('p4-area')) vis('p4-edge', c.checked); if (LAYERS[c.dataset.i][1].includes('p2-area')) { vis('p2-edge', c.checked); vis('p2-ring', c.checked); } }; c.onchange(); });
-  $('legend').innerHTML = [['#f7941d', 'intersection (IN): land / construction'], ['#a6114f', 'road (RD): land / construction'], ['#6f8e3d', 'recreation & open space (SR, LP)'], ['hatch', 'outer public purpose land'], ['dots', 'shared user path (SUP)'], ['#8a8c1f', 'pedestrian signals (PED) – Maki'], ['cu', 'culvert (CU)'], ['#d42b49', 'VDP underground cable'], ['psp', 'precinct boundary']]
-    .map(([c, t]) => `<div class="lg"><span class="sw" style="${c === 'hatch' ? 'background:repeating-linear-gradient(135deg,#a6114f 0 4px,#111 4px 6px)' : c === 'dots' ? 'background:radial-gradient(#111 35%,transparent 40%) 0 0/6px 6px' : c === 'psp' ? 'border:2px dashed #24337a' : c === 'cu' ? 'border-left:3px solid #111;border-right:3px solid #111;border-radius:6px' : 'background:' + c}"></span>${esc(t)}</div>`).join('');
+  $('lyr').querySelectorAll('input').forEach(c => { c.onchange = () => LAYERS[c.dataset.i][1].forEach(id => vis(id, c.checked)); c.onchange(); });
+  const SV = {cu: '<svg width="22" height="16" viewBox="0 0 40 34"><path d="M3 7L10 13H30L37 7M3 27L10 21H30L37 27" stroke="#111" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>',
+    ped: '<svg width="16" height="16" viewBox="0 0 28 28"><rect x="5" y="5" width="18" height="18" fill="#a5a831"/><rect x="11" y="11" width="6" height="6" fill="#fff"/></svg>',
+    xing: '<svg width="16" height="16" viewBox="0 0 30 30"><path d="M6 6L24 24M24 6L6 24" stroke="#fff" stroke-width="9"/><path d="M7 7L23 23M23 7L7 23" stroke="#f7941d" stroke-width="5"/></svg>',
+    road: '<svg width="22" height="12"><path d="M2 6H20M2 2V10M20 2V10" stroke="#a6114f" stroke-width="3"/></svg>',
+    int: '<svg width="22" height="12"><path d="M2 6H20M2 2V10M20 2V10" stroke="#f7941d" stroke-width="3"/></svg>',
+    sup: '<svg width="22" height="12"><g fill="#111"><circle cx="3" cy="6" r="2"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="6" r="2"/><circle cx="21" cy="6" r="2"/></g></svg>',
+    vdp: '<svg width="22" height="12"><path d="M3 6H19M6 3L3 6L6 9M16 3L19 6L16 9" stroke="#d42b49" stroke-width="2" fill="none"/></svg>'};
+  const box = (fill, line, extra = '') => `<span class="sw" style="background:${fill};border:1.5px solid ${line};${extra}"></span>`;
+  $('legend').innerHTML = [['<span class="sw" style="border:2px dashed #24337a"></span>', 'precinct boundary'],
+    ['<b style="font-size:11px">Plan 2</b>', ''], [SV.road, 'road project (RD)'], [SV.int, 'intersection project (IN)'], [SV.sup, 'shared user path project (SUP)'], [SV.cu, 'culvert project (CU)'], [SV.ped, 'pedestrian signals project (PED)'], [SV.xing, 'pedestrian crossing'], [SV.vdp, 'Victorian Desalination Project (VDP) underground cable'],
+    ['<b style="font-size:11px">Plan 3</b>', ''], [box('#6f8e3d', '#2f4a14'), 'local sports reserve (SR)'],
+    ['<b style="font-size:11px">Plan 4</b>', ''], [box('#6f8e3d', '#2f4a14'), 'land for recreation and open space'], [box('#f7941d', '#b35f00'), 'land for intersection'], [box('#a6114f', '#5c0a2b'), 'land for road'], [box('repeating-linear-gradient(135deg,#a6114f 0 4px,#111 4px 6px)', '#111'), 'outer public purpose land'], [box('transparent', '#0a7d5f', 'border-style:dashed'), 'VPA surveyed land (optional)']]
+    .map(([sw, t]) => t ? `<div class="lg">${sw}${esc(t)}</div>` : `<div style="margin-top:5px">${sw}</div>`).join('') + '<div class="muted" style="font-size:11px;margin-top:4px">Symbols as in each plan\'s legend.</div>';
 }
 const vis = (id, on) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
-function setOverlay(k) {
+function setLayerGroup(i, on) { const c = $('lyr').querySelector(`input[data-i="${i}"]`); if (c && c.checked !== on) { c.checked = on; c.onchange(); } }
+function setOverlay(k) {   // a plan map shows its own layers only; 'None' shows all plans' layers
   Object.keys(D.images).forEach(x => vis('img-' + x, x === k)); $('overlay').value = k;
+  LAYERS.forEach(([, , on, plan], i) => { if (plan && plan !== 'plan4fus') setLayerGroup(i, !k || plan === k); if (plan === 'plan4fus' && k && k !== 'plan4') setLayerGroup(i, false); });
+  if (READY) applyFilters();
   $('fit').textContent = k ? 'Placed by its PSP boundary: ' + D.images[k].fit.replace('boundary pixels: ', '').replace(/ \(\d+ px\)/, '') : '';
 }
 $('overlay').onchange = e => setOverlay(e.target.value);
@@ -227,7 +243,9 @@ function select(key, {zoom = true, scroll = false} = {}) {
   if (scroll && tr) tr.scrollIntoView({block: 'nearest', behavior: 'smooth'});
   const fs = FBYKEY[key] || [];
   if (zoom && fs.length) { const b = bboxOf(fs); map.fitBounds([[b[0], b[1]], [b[2], b[3]]], {padding: 120, maxZoom: 17, duration: 700}); }
-  const m = key.split('|')[1]; if (zoom && D.images[m] && $('overlay').value) setOverlay(m);
+  const m = key.split('|')[1];
+  if ($('overlay').value && $('overlay').value !== m) setOverlay(m);
+  LAYERS.forEach(([, , , plan], i) => { if (plan === m) setLayerGroup(i, true); });
 }
 function detail(key) {
   const rs = rowFor(key); if (!rs.length) return; const r = rs[0];
@@ -261,8 +279,9 @@ function applyFilters() {
   $('summary').innerHTML = `<b>${rs.length}</b> of ${ROWS.length} rows · <b>${onMap}</b> of ${keys.length} projects drawn on the map · construction ${fmt(cost)} (to ICP ${fmt(icp)}) · land ${ha.toFixed(4)} ha`;
   // map shows only the filtered projects (filters drive the map)
   if (READY) {   // the map shows only the projects left by the filters
-    const show = ['in', ['get', 'key'], ['literal', keys]];
-    FILT_IDS.forEach(id => map.setFilter(id, ['all', ORIGF[id], show]));
+    const show = ['in', ['get', 'key'], ['literal', keys]], ov = $('overlay').value;
+    const maps = ov ? (ov === 'plan4' ? ['plan4'] : [ov]) : ['plan2', 'plan3', 'plan4'];   // labels follow the chosen plan map
+    FILT_IDS.forEach(id => map.setFilter(id, id === 'labels' ? ['all', ORIGF[id], show, ['in', ['get', 'map'], ['literal', maps]]] : ['all', ORIGF[id], show]));
   }
   $('tb').querySelectorAll('tr').forEach(tr => {
     tr.onmouseenter = () => setHover(tr.dataset.key); tr.onmouseleave = () => setHover(null);

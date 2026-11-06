@@ -61,6 +61,11 @@ C2['standard_levy'] = C2.project_id.isin(T['table5'].project_id); C2['supplement
 C2['type'] = C2.project_id.str.extract(r'CK-([A-Z]+)-')[0].map({'IN': 'Intersection', 'RD': 'Road', 'SUP': 'Shared user path', 'CU': 'Culvert', 'PED': 'Pedestrian signals'})
 C2.insert(1, 'map', 'Plan 2 · Standard and supplementary levy transport construction projects (printed p. 8)')
 O2 = gpd.read_file(V2, layer='croskell_plan2_other_symbols')
+# Plan 2 prints two pedestrian crossings, both on RD-01 (Casey Fields Blvd) where SUP-01 crosses it; the other two
+# detections were intersection node markers (IN-02, IN-05), so keep only crossings within 40 m of RD-01
+_rd = gpd.read_file(V2, layer='croskell_plan2_construction_as_drawn'); _rd = _rd[_rd.proj_id == 'CK-RD-01'].geometry.iloc[0]
+O2 = O2[(O2.cls != 'pedestrian crossing') | (O2.distance(_rd) < 40)]
+assert (O2.cls == 'pedestrian crossing').sum() == 2, O2.cls.value_counts()
 L4 = attach(gpd.read_file(V2, layer='croskell_plan4_land_as_drawn'), ['table8'])
 F4 = attach(gpd.read_file(V2, layer='croskell_plan4_land_vpa_fus'), ['table8'])
 for g in (L4, F4):
