@@ -22,3 +22,12 @@
    (Table 5 standard transport, 6 supplementary transport, 7 community & recreation, 8 inner/outer public purpose land),
    each linked to its features on its plan map by `project_id` + map. Export follows `data/reference/export_schema.xlsx`.
    "Land cost ($)" is left empty: ICP land is provided in kind and equalised per parcel (Table 11), not costed per project.
+
+## Collison Estate DCP (V4.1, Feb 2025)
+1. Figure 3 (printed p. 12, embedded image) placed by its periwinkle precinct line on the DCPO22 overlay boundary: median 1.8 m.
+2. Tables 5–8 and T11 read from the PDF text (`data/reference/collison/projects_t5_t8_t11.csv`); T11 subtotals and total checked.
+3. Shapes: roads (maroon) and drainage channels (dark green) are the plan's colours, each pixel assigned to the nearest
+   traced centre line of its class (so RD02/RD03/RD05/RD06 split at Heather Grove / Collison Rd), then one solid shape
+   each; intersections are the carriageways of the two named roads (OSM) within the symbol, plus the junction; pipes
+   are traced lines (lengths within 2% of T6 except DR15 74 m vs 99 m); CF01 is the community-facility fill by its star.
+   Drawn areas are 1–2× the land in T5/T6 because the plan draws bars wider than the land strip.

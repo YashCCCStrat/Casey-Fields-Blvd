@@ -1,0 +1,343 @@
+{
+ "_note": "DCP items digitised by hand from Collison Estate DCP Figure 3 (PDF p16, printed p12): pixel polylines in the embedded image (1323 x 1907), converted to map coordinates with the DCPO22_fig3 affine in plan_figures.json. Pipe lengths agree with Table 6 within ~5% (e.g. DR11 ~378 m vs 391.6 m; DR14 ~504 m vs 502.2 m). Accuracy about 5-10 m.",
+ "figure": "DCPO22_fig3",
+ "plan": "Collison Estate DCP",
+ "items": {
+  "DR01": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     528,
+     195
+    ],
+    [
+     1000,
+     258
+    ]
+   ]
+  },
+  "DR02": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     650,
+     445
+    ],
+    [
+     635,
+     585
+    ]
+   ]
+  },
+  "DR03": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     615,
+     720
+    ],
+    [
+     592,
+     950
+    ],
+    [
+     548,
+     990
+    ],
+    [
+     540,
+     1095
+    ]
+   ]
+  },
+  "DR04": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     958,
+     500
+    ],
+    [
+     930,
+     675
+    ]
+   ]
+  },
+  "DR05": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     930,
+     690
+    ],
+    [
+     892,
+     975
+    ]
+   ]
+  },
+  "DR06": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     540,
+     1095
+    ],
+    [
+     520,
+     1230
+    ]
+   ]
+  },
+  "DR07": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     525,
+     1355
+    ],
+    [
+     485,
+     1610
+    ]
+   ]
+  },
+  "DR08": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     870,
+     1155
+    ],
+    [
+     830,
+     1505
+    ]
+   ]
+  },
+  "DR09": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     820,
+     1510
+    ],
+    [
+     800,
+     1645
+    ]
+   ]
+  },
+  "DR10": {
+   "kind": "Drainage channel",
+   "px": [
+    [
+     340,
+     1590
+    ],
+    [
+     640,
+     1645
+    ]
+   ]
+  },
+  "DR11": {
+   "kind": "Underground pipe",
+   "px": [
+    [
+     638,
+     578
+    ],
+    [
+     795,
+     600
+    ],
+    [
+     792,
+     655
+    ],
+    [
+     935,
+     675
+    ]
+   ]
+  },
+  "DR12": {
+   "kind": "Underground pipe",
+   "px": [
+    [
+     615,
+     720
+    ],
+    [
+     638,
+     578
+    ]
+   ]
+  },
+  "DR13": {
+   "kind": "Underground pipe",
+   "px": [
+    [
+     1000,
+     255
+    ],
+    [
+     1035,
+     230
+    ]
+   ]
+  },
+  "DR14": {
+   "kind": "Underground pipe",
+   "px": [
+    [
+     510,
+     1300
+    ],
+    [
+     685,
+     1330
+    ],
+    [
+     830,
+     1352
+    ],
+    [
+     820,
+     1415
+    ],
+    [
+     805,
+     1510
+    ]
+   ]
+  },
+  "DR15": {
+   "kind": "Underground pipe",
+   "px": [
+    [
+     520,
+     1230
+    ],
+    [
+     510,
+     1300
+    ]
+   ]
+  },
+  "DR16": {
+   "kind": "Underground pipe",
+   "px": [
+    [
+     635,
+     1645
+    ],
+    [
+     788,
+     1665
+    ],
+    [
+     792,
+     1575
+    ]
+   ]
+  },
+  "DR17": {
+   "kind": "Underground pipe",
+   "px": [
+    [
+     530,
+     1310
+    ],
+    [
+     525,
+     1355
+    ]
+   ]
+  },
+  "RD01": {
+   "kind": "Road",
+   "px": [
+    [
+     540,
+     420
+    ],
+    [
+     800,
+     450
+    ]
+   ]
+  },
+  "RD03": {
+   "kind": "Road",
+   "px": [
+    [
+     420,
+     1078
+    ],
+    [
+     535,
+     1095
+    ]
+   ]
+  },
+  "RD04": {
+   "kind": "Road",
+   "px": [
+    [
+     395,
+     1460
+    ],
+    [
+     655,
+     1490
+    ]
+   ]
+  },
+  "RD05": {
+   "kind": "Road",
+   "px": [
+    [
+     822,
+     385
+    ],
+    [
+     720,
+     1125
+    ]
+   ]
+  },
+  "RD06": {
+   "kind": "Road",
+   "px": [
+    [
+     715,
+     1135
+    ],
+    [
+     632,
+     1765
+    ]
+   ]
+  },
+  "IN04": {
+   "kind": "Intersection",
+   "px": [
+    [
+     625,
+     1800
+    ]
+   ]
+  },
+  "CF01": {
+   "kind": "Community facility",
+   "px": [
+    [
+     508,
+     1025
+    ]
+   ]
+  }
+ }
+}

@@ -80,11 +80,56 @@ for key, title in (('ICO3_plan2', 'Plan 2 · Standard and supplementary levy tra
     H, W = a.shape[:2]; c = [d.transform * xy for xy in ((0, 0), (W, 0), (W, H), (0, H))]
     im = Image.fromarray(a).resize((W // 2, H // 2), Image.LANCZOS); b = io.BytesIO(); im.save(b, 'JPEG', quality=80, optimize=True)
     IM[key.split('_')[1]] = dict(title=title, coords=[[round(v, 7) for v in to_ll.transform(x, y)] for x, y in c], img='data:image/jpeg;base64,' + base64.b64encode(b.getvalue()).decode(), fit=d.tags().get('fit', ''))
-icons = {n: (ROOT / f'symbology/maki/{n}-15.svg').read_text() for n in ('park', 'pitch', 'cricket', 'square-stroke', 'circle-stroked', 'roadblock', 'triangle')}
-schema = {'columns': ['Plan', 'Project ID', 'Category', 'Project description', 'Levy component', ' land area (ha)', 'Land acquired ', 'Land cost ($)', 'Construction cost ($)', 'Corridor segment (approx.)', 'Current status / completion stage'],
-          'widths': [5.0, 9.43, 8.57, 17.86, 15.14, 14.14, 9.14, 12.29, 19.57, 25.14, 30.71]}
-tables = {k: T[k].replace({np.nan: None}).to_dict('records') for k in T}
-out = dict(rows=R.to_dict('records'), features=dict(type='FeatureCollection', features=feats), images=IM, icons=icons, schema=schema, tables=tables,
-           built='2026-11-13', source='Croskell (Employment) ICP, October 2025')
-(ROOT / 'app/croskell/data.js').write_text('window.CK = ' + json.dumps(out, ensure_ascii=False) + ';\n', encoding='utf-8')
-print('data.js', (ROOT / 'app/croskell/data.js').stat().st_size // 1024, 'KB')
+# ---------- shared app format (app/common/viewer.js) ----------
+import sys; sys.path.insert(0, str(ROOT / 'tools')); from appdata import write_app
+def cls_of(p):
+    l, m, k, c = p['layer'], p['map'], p.get('kind') or '', p.get('category') or ''
+    if m == 'psp': return 'psp'
+    if l == 'plan2_other_symbols_points': return 'p2_xing'
+    if l == 'plan2_other_symbols_lines': return 'p2_vdp'
+    if m == 'plan2': return {'Intersection': 'p2_IN', 'Road': 'p2_RD', 'Shared path': 'p2_SUP', 'Culvert': 'p2_CU', 'Pedestrian signals': 'p2_PED'}[c]
+    if m == 'plan3': return 'p3_SR'
+    if l == 'plan4_land_vpa_fus': return 'p4_fus'
+    return {'Land for intersection': 'p4_IN', 'Land for road': 'p4_RD', 'Outer public purpose land (road)': 'p4_OPPL', 'Land for recreation and open space': 'p4_REC'}[k]
+for f_ in feats:
+    p = f_['properties']; p['cls'] = cls_of(p)
+    if p['map'] == 'plan4fus': p['map'] = 'plan4'
+    if p.get('project_id'): p['key'] = p['project_id'] + '|' + p['map']
+    else: p.pop('key', None)
+    if p['map'] in ('psp', 'plan2other'): p['map'] = '' if p['map'] == 'psp' else 'plan2'
+    for k in ('layer', 'kind', 'category'): p.pop(k, None)
+classes = {
+    'p2_RD': dict(label='Road project (RD)', kind='fill', color='#a6114f', outline='#5c0a2b', map='plan2'),
+    'p2_IN': dict(label='Intersection project (IN)', kind='fill', color='#f7941d', outline='#b35f00', map='plan2'),
+    'p2_SUP': dict(label='Shared user path project (SUP)', kind='line', color='#111111', dash='dots', width=5, map='plan2'),
+    'p2_CU': dict(label='Culvert project (CU)', kind='point', icon='cu', map='plan2', color='#111111'),
+    'p2_PED': dict(label='Pedestrian signals project (PED)', kind='point', icon='ped', map='plan2', color='#a5a831'),
+    'p2_xing': dict(label='Pedestrian crossing', kind='point', icon='xing', map='plan2', color='#f7941d', context=True),
+    'p2_vdp': dict(label='VDP underground cable', kind='line', color='#d42b49', width=2, map='plan2', arrow=True, context=True),
+    'p3_SR': dict(label='Local sports reserve (SR)', kind='fill', color='#6f8e3d', outline='#2f4a14', map='plan3'),
+    'p4_REC': dict(label='Land for recreation and open space', kind='fill', color='#6f8e3d', outline='#2f4a14', map='plan4'),
+    'p4_IN': dict(label='Land for intersection', kind='fill', color='#f7941d', outline='#b35f00', map='plan4'),
+    'p4_RD': dict(label='Land for road', kind='fill', color='#a6114f', outline='#5c0a2b', map='plan4'),
+    'p4_OPPL': dict(label='Outer public purpose land', kind='fill', color='#a6114f', outline='#111111', pattern='hatch', map='plan4'),
+    'p4_fus': dict(label='VPA surveyed land (comparison)', kind='fill', style='outline', color='#0a7d5f', outline='#0a7d5f', map='plan4', on=False),
+    'psp': dict(label='Precinct boundary (PSP 1051)', kind='line', color='#24337a', width=2.5, dash='long', map='', context=True)}
+for r in rows:
+    r['export'] = [r['plan'], r['project_id'], r['category'], ' – '.join(x for x in (r['title'], r['description']) if x), r['component'], r['land_ha'], None,
+                   None, None if r['table'] == 'Table 8' else r['total_cost_aud'], r['corridor_segment'] or None, None]
+    r['rid'] = r['project_id'] + '|' + r['component']
+ES = json.loads((ROOT / 'data/reference/export_schema.json').read_text())
+write_app(ROOT / 'app/croskell/data.js', dict(
+    meta=dict(title='Croskell (Employment) ICP – projects', subtitle='Plans 2–4 placed on the ground · Tables 5–8 · October 2025', plan='Croskell (Employment) ICP',
+              source='Croskell (Employment) Infrastructure Contributions Plan, October 2025', storage_key='croskell-edits-v1', export_prefix='croskell-projects'),
+    maps=[dict(id='plan2', title='Plan 2 · Transport construction (p. 8)'), dict(id='plan3', title='Plan 3 · Community & recreation (p. 13)'), dict(id='plan4', title='Plan 4 · Public land (p. 15)')],
+    images=IM, classes=classes, features=feats, rows=rows, tables={k.replace('table', 'Table '): v for k, v in {k: T[k].replace({np.nan: None}).to_dict('records') for k in T}.items()},
+    columns=[dict(k='project_id', label='Project ID', t='id'), dict(k='category', label='Category'), dict(k='title', label='Title'), dict(k='description', label='Description', show=False),
+             dict(k='component', label='Levy component'), dict(k='table', label='Table', show=False), dict(k='staging', label='Staging', show=False), dict(k='land_ha', label='Land ha', t='num'),
+             dict(k='total_cost_aud', label='Total cost', t='money'), dict(k='apportionment_pct', label='Appt. %', t='num', show=False), dict(k='cost_to_icp_aud', label='To ICP', t='money'),
+             dict(k='cost_per_ha_aud', label='Cost / ha', t='money', show=False), dict(k='corridor_segment', label='Corridor segment', show=False),
+             dict(k='acquired', label='Land acquired', t='edit'), dict(k='status', label='Status', t='edit')],
+    detail=[dict(k='component', label='Levy component'), dict(k='table', label='Table'), dict(k='land_ha', label='Public purpose land', t='ha'), dict(k='total_cost_aud', label='Total estimated cost', t='money'),
+            dict(k='apportionment_pct', label='Apportioned to ICP', t='pct'), dict(k='cost_to_icp_aud', label='Cost to ICP', t='money'), dict(k='cost_per_ha_aud', label='Cost per ha', t='money'),
+            dict(k='staging', label='Staging'), dict(k='funding_source', label='Funding source'), dict(k='footnote', label='Footnote'), dict(k='corridor_segment', label='Corridor segment')],
+    totals=[dict(k='total_cost_aud', label='cost', t='money'), dict(k='cost_to_icp_aud', label='to ICP', t='money'), dict(k='land_ha', label='land ha', t='num')],
+    export=dict(columns=ES['columns'], widths=ES['widths'], acquired_col=6, status_col=10, note='Land cost is not used: ICP land is provided in kind and equalised per parcel (Table 11).')))

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-15
+### Added
+- **Collison Estate DCP** (`gis/collison/`, `app/collison/`): Figure 3 placed on the ground (median 1.8 m), all 28 mapped projects as one shape each – roads and drainage channels in the plan's colours (split at junctions by nearest traced centre line), intersections IN01–IN04 as road footprints, pipes DR11–DR17 as lines, community facility CF01 – joined to Tables 5–8 and T11 (land, construction, total, apportionment, cost to MCA, levy; totals match the printed $73,015,850 / $64,792,268 / $945,578). `tools/collison_tables.py`, `tools/build_collison.py`.
+### Changed
+- **New app layout, shared by all plans** (`app/common/viewer.js`, `viewer.css`; `app/index.html` lists the plans): map on top, table below in a resizable panel; plan-map tabs; floating detail card; legend items are click-to-hide toggles; category chips, project-ID search, "in map view", and a column chooser decide what is shown; modern styling with light/dark support.
+
 ## 2026-11-14
 ### Fixed (owner feedback)
 - **Intersection construction projects (Plan 2 IN-01…06) drawn as intersection footprints**: the carriageways of the two roads named in Table 5 (OpenStreetMap centrelines, widened per carriageway), limited to the extent of the plan's bar, plus the junction and rounded corners; future legs not yet in OSM keep the plan's bar. Search box now matches project ID only.

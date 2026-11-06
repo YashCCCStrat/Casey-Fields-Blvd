@@ -1,0 +1,28 @@
+{
+ "columns": [
+  "Plan",
+  "Project ID",
+  "Category",
+  "Project description",
+  "Levy component",
+  " land area (ha)",
+  "Land acquired ",
+  "Land cost ($)",
+  "Construction cost ($)",
+  "Corridor segment (approx.)",
+  "Current status / completion stage"
+ ],
+ "widths": [
+  5.0,
+  9.43,
+  8.57,
+  17.86,
+  15.14,
+  14.14,
+  13.0,
+  12.29,
+  19.57,
+  25.14,
+  30.71
+ ]
+}

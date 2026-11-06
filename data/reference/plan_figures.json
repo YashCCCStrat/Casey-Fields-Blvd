@@ -89,5 +89,35 @@
    ]
   ],
   "fit": "boundary pixels: median 2.4 m, 90th percentile 4.5 m from the VPA PSP boundary (42198 px)"
+ },
+ "DCPO22_fig3": {
+  "title": "Figure 3 \u00b7 Infrastructure map \u2013 DCP items",
+  "pdf": "sources/pdfs/Collison Estate Development Contributions Plan V4.1 Feb25.pdf",
+  "pdf_page": 16,
+  "printed_page": 12,
+  "image_index": 2,
+  "fit_to": "overlay:DCPO22",
+  "boundary": "periwinkle",
+  "region": [
+   397,
+   0,
+   1323,
+   1907
+  ],
+  "affine": [
+   [
+    1.0494180836319595,
+    -0.013149923067210799
+   ],
+   [
+    0.0009347186342547854,
+    -1.0455092042974634
+   ],
+   [
+    351410.63524655683,
+    5781764.295898527
+   ]
+  ],
+  "fit": "boundary pixels: median 1.8 m, 90th percentile 3.3 m from the DCPO22 overlay boundary (9601 px)"
  }
 }

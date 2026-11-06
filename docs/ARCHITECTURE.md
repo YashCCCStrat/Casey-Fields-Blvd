@@ -12,3 +12,8 @@ gis/croskell/vpa_fus_croskell.gpkg ──┘                                    
 - Joins: everything by the printed project ID (`CK-…`); map features also carry which plan map they belong to.
 - The app is static (no server): MapLibre, SheetJS and the fonts are vendored in `app/croskell/vendor/`; edits to
   Land acquired / Status live in the browser (localStorage) and travel via the exported Excel file.
+
+## App (2026-11-15)
+- `app/common/viewer.js` + `viewer.css`: one viewer for every plan; each plan folder has a tiny `index.html` and its `data.js` (`window.PLAN`: meta, maps, images, classes = legend/symbology, features, rows, columns, detail fields, totals, export mapping, printed tables).
+- `tools/appdata.py`: shared helpers (`solid()` one-shape-per-item, `image_entry()` plan image + corners, `write_app()`).
+- Builders: `tools/build_croskell_gpkg.py` + `build_croskell_app.py`; `tools/collison_tables.py` + `build_collison.py`.
