@@ -1,6 +1,10 @@
 # Changelog
 
 ## 2026-11-15 (latest)
+### Fixed (owner feedback, Collison)
+- ID label pills (RD05, DR01 …) are no longer part of the road and drainage shapes: labels are found by their white lettering and removed, and each bar is rebuilt as straight segments fitted to the printed colour at its printed width (RD02, RD05 straight; drainage channel areas now within ~10% of T6).
+- Pipes fitted to the printed blue dashes (DR16 moved onto them; lengths within 4% of T6 except DR15).
+- IN02 and IN03 drawn as the plan's intersection symbol (cross with ring).
 ### Changed
 - Moving the Transparency slider shows the printed plan if none is shown yet (the first ticked plan of each area, e.g. Collison Figure 3).
 - The printed-plan slider is now **Transparency** (0% = solid, default 35%); it was opacity, so 0% hid the plan. "Show printed plan" buttons made more visible.

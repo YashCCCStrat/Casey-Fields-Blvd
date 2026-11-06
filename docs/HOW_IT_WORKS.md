@@ -26,7 +26,7 @@
 ## Collison Estate DCP (V4.1, Feb 2025)
 1. Figure 3 (printed p. 12, embedded image) placed by its periwinkle precinct line on the DCPO22 overlay boundary: median 1.8 m.
 2. Tables 5–8 and T11 read from the PDF text (`data/reference/collison/projects_t5_t8_t11.csv`); T11 subtotals and total checked.
-3. Shapes: roads (maroon) and drainage channels (dark green) are the plan's colours, each pixel assigned to the nearest
+3. Shapes (revised 2026-11-15): label pills are removed first (white lettering inside the bar colour); each road and drainage bar is the traced centre line refitted to the printed pixels (position, and angle on segments over ~90 px) and buffered by its printed half-width; pipes are refitted the same way to the blue dashes; IN02/IN03 are the plan's intersection symbol. Before that: roads (maroon) and drainage channels (dark green) were the plan's colours, each pixel assigned to the nearest
    traced centre line of its class (so RD02/RD03/RD05/RD06 split at Heather Grove / Collison Rd), then one solid shape
    each; intersections are the carriageways of the two named roads (OSM) within the symbol, plus the junction; pipes
    are traced lines (lengths within 2% of T6 except DR15 74 m vs 99 m); CF01 is the community-facility fill by its star.
