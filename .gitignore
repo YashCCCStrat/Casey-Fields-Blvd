@@ -1,0 +1,6 @@
+data/private/
+__pycache__/
+*.pyc
+*.qgz~
+*.qgs~
+.DS_Store
