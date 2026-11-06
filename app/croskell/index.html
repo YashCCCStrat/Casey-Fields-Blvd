@@ -78,7 +78,7 @@ td.edit input{width:100%;min-width:90px;font-size:12px;padding:2px 4px}
 </div>
 <div id="side">
   <div id="filters">
-    <div class="row"><input type="search" id="q" placeholder="Search ID, title, description…"></div>
+    <div class="row"><input type="search" id="q" placeholder="Search project ID (e.g. IN-02)"></div>
     <div class="row"><select id="fCat"><option value="">All categories</option></select><select id="fComp"><option value="">All levy components</option></select></div>
     <div class="row"><select id="fMap"><option value="">All plan maps</option><option value="plan2">Plan 2 · transport construction</option><option value="plan3">Plan 3 · community &amp; recreation</option><option value="plan4">Plan 4 · public land</option></select>
       <label class="row" style="gap:4px"><input type="checkbox" id="fView"> only in map view</label><button id="bClear">Clear</button></div>
@@ -266,7 +266,7 @@ function filtered() {
   const q = $('q').value.trim().toLowerCase(), c = $('fCat').value, comp = $('fComp').value, m = $('fMap').value;
   let inView = null;
   if ($('fView').checked && READY) { const b = map.getBounds(); inView = new Set(); D.features.features.forEach(f => { const x = bboxOf([f]); if (x[2] >= b.getWest() && x[0] <= b.getEast() && x[3] >= b.getSouth() && x[1] <= b.getNorth()) inView.add(f.properties.key); }); }
-  let rs = ROWS.filter(r => (!q || [r.project_id, r.title, r.description, r.component, r.category].join(' ').toLowerCase().includes(q)) && (!c || r.category === c) && (!comp || r.component === comp) && (!m || r.map === m) && (!inView || inView.has(r.key)));
+  let rs = ROWS.filter(r => (!q || r.project_id.toLowerCase().includes(q)) && (!c || r.category === c) && (!comp || r.component === comp) && (!m || r.map === m) && (!inView || inView.has(r.key)));
   if (SORT.k) rs = rs.slice().sort((a, b) => { const x = val(a, SORT.k), y = val(b, SORT.k); return (typeof x === 'number' || typeof y === 'number' ? (x ?? -1) - (y ?? -1) : String(x ?? '').localeCompare(String(y ?? ''))) * SORT.dir; });
   return rs;
 }

@@ -2,6 +2,7 @@
 
 ## 2026-11-14
 ### Fixed (owner feedback)
+- **Intersection construction projects (Plan 2 IN-01…06) drawn as intersection footprints**: the carriageways of the two roads named in Table 5 (OpenStreetMap centrelines, widened per carriageway), limited to the extent of the plan's bar, plus the junction and rounded corners; future legs not yet in OSM keep the plan's bar. Search box now matches project ID only.
 - **Each project is one solid shape as drawn.** Cutting out ID labels, leader lines and symbols had split items and left holes. Pieces of the same project are now joined with a bar-wide bridge, holes and notches filled, and Plan 2 intersections include their node ring (found on the plan). Result: Plan 2 IN-01…06 and RD-01 one polygon each; Plan 4 RD-01 two (north and south pieces), OPPL-RD-01 one (smoothed where the street name bit into it), LP-03 a closed square.
 - Symbols as in the plans' legends: culvert drawn as the plan's culvert symbol along its road/path, pedestrian signals as the olive square, pedestrian crossings as an orange X with white outline; legend redrawn per plan. Maki sports icon removed.
 - Only the two pedestrian crossings printed on Plan 2 (on RD-01) are kept; two false detections at IN-02 and IN-05 removed. Crossings, VDP cable and Plan 2 items no longer show with Plan 3 or Plan 4: choosing a plan map shows that plan's layers and labels only.

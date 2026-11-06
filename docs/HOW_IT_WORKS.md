@@ -15,6 +15,7 @@
    - Plan 3 sports reserves: the legend colour on Plan 3; the plan draws SR-01 and SR-02 as one joined shape, split
      along the VPA FUS reserve extents (3.37 / 8.42 ha drawn vs 3.58 / 8.86 ha FUS).
    - **One shape per drawn item** (`solid()` in the build script): pieces of the same project closer than 80 m are joined by a bridge as wide as the bar (minimum spanning tree), holes and notches are filled; Plan 2 intersections take in their node ring (orange disc with white dot, detected on the plan); the outer road land is rebuilt slice by slice (4 m) to fill bites left by the printed street name.
+   - **Intersection footprints** (Plan 2 IN-01…06): Plan 2 draws each intersection as a thin bar along the legs it funds. The footprint is the carriageway of the two roads named in Table 5 (`gis/corridor/osm_roads_croskell.gpkg`, OpenStreetMap via Overture, ODbL; 9 m half-width per arterial carriageway, 7 m tertiary) within 22 m of the bar, plus a 20 m junction disc at the plan's node ring, closed by 12 m for rounded corners. Legs not yet built (industrial connectors at IN-01, IN-04, IN-05) keep the plan's bar. Indicative extent, not a design.
    - Plan 4 land from VPA FUS (surveyed; matches Table 8) and the development classes (Tables 4, 9, 10).
    - Non-spatial layers: table5–table9_10 and `projects` (every ID, which tables and plan maps it appears in).
 4. **App** (`tools/build_croskell_app.py` → `app/croskell/`): 31 rows, one per project and levy component

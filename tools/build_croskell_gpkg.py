@@ -120,6 +120,29 @@ C2['geometry'] = [(solid(g, join=200, node=13) if p.startswith('CK-IN') else sol
 for i, r in C2[C2.project_id.str.startswith('CK-IN') & C2.geom_type.str.contains('Polygon')].iterrows():
     near = [q for q in RINGS if q.distance(r.geometry) < 25]
     if near: C2.at[i, 'geometry'] = solid(shapely.unary_union([r.geometry] + [q.buffer(11) for q in near]), join=60, w=12)   # ring radius ~11 m at 1:15,000
+# ---- intersections as road footprints (owner, 2026-11-14): the plan's bar marks which legs are in the project; the
+# footprint is the carriageway of the two roads named in Table 5 (OpenStreetMap centrelines, each carriageway widened),
+# limited to the bar's extent, plus the junction; a leg OSM does not have yet (future connector) keeps the plan's bar.
+OSM = gpd.read_file(ROOT / 'gis/corridor/osm_roads_croskell.gpkg')
+OSM = OSM[OSM['class'].isin(['trunk', 'primary', 'secondary', 'tertiary'])]
+IN_ROADS = {'CK-IN-01': ('Thompsons Road', None), 'CK-IN-02': ('Thompsons Road', 'Casey Fields Boulevard'), 'CK-IN-03': ('Thompsons Road', 'Wheelers Park Drive'),
+            'CK-IN-04': ('Narre Warren Road', None), 'CK-IN-05': ('Berwick - Cranbourne Road', None), 'CK-IN-06': ('Linsell Boulevard', 'Casey Fields Boulevard')}
+HW = {'trunk': 9, 'primary': 9, 'secondary': 9, 'tertiary': 7}      # half-width per carriageway centreline (m)
+def footprint(pid, bar):
+    art, leg = IN_ROADS[pid]; reach = bar.buffer(22); parts = [bar.buffer(4, join_style='mitre')]
+    A = OSM[(OSM.name == art) & OSM.intersects(reach)]
+    for g, k in zip(A.geometry, A['class']): parts.append(g.intersection(reach).buffer(HW[k], cap_style='flat'))
+    if leg:
+        L = OSM[(OSM.name == leg) & OSM.intersects(reach)]
+        for g, k in zip(L.geometry, L['class']): parts.append(g.intersection(reach).buffer(HW[k], cap_style='flat'))
+    ring = [q for q in RINGS if q.distance(bar) < 25]
+    if ring: parts.append(ring[0].buffer(20))                       # the junction itself
+    fp = shapely.unary_union(parts).buffer(12).buffer(-12)          # one shape with rounded inner corners
+    return shapely.unary_union([shapely.Polygon(p.exterior) for p in shapely.get_parts(fp) if p.area > 100]).simplify(0.8)
+m = C2.project_id.str.startswith('CK-IN') & C2.geom_type.str.contains('Polygon')
+C2.loc[m, 'geometry'] = [footprint(p, g) for p, g in zip(C2[m].project_id, C2[m].geometry)]
+C2.loc[m, 'method'] = 'road footprint: OSM carriageways of the named roads within the Plan 2 bar extent, plus the bar'
+print('intersection footprints (ha):', {p: round(g.area / 1e4, 2) for p, g in zip(C2[m].project_id, C2[m].geometry)})
 print('rings added:', {p: sum(q.distance(g) < 25 for q in RINGS) for p, g in zip(C2.project_id, C2.geometry) if p.startswith('CK-IN')})
 L4 = L4.copy(); pspg = psp.geometry.iloc[0]
 road = solid(shapely.unary_union(list(L4[L4.project_id.isin(['CK-RD-01', 'CK-OPPL-RD-01'])].geometry)), d=7)   # 7 m: smooths the bites left by the street-name lettering
