@@ -1,6 +1,11 @@
 # Changelog
 
-## Latest – owner corrections (Collison)
+## Latest – import and export clarified
+### Changed
+- **Import edits** also takes a *Changes for repo* file (restores edits and added shapes, no duplicates on re-import); for Excel files it now says how many rows were not found, and refuses files without the app's *Details* sheet. Its tooltip no longer says it only covers Land acquired / Status (it restores every column).
+- Tooltips on **Export to Excel** (all rows of the areas switched on, filters ignored) and **Export shown rows** (only the filtered rows, in table order). `docs/EDITING.md` has a table of the exports and what Import accepts.
+
+## Owner corrections (Collison)
 ### Fixed
 - Five Collison shapes redrawn to the owner's marked-up locations: **CF01** (0.54 ha), **IN04**, **DR10** (now including its western end, 0.70 ha), **DR16** (along the printed pipe dots south of the old line and up the west side of DR09, 317 m) and **DR17** (onto the printed dots east of the old line, from DR14 to channel DR07, 51 m). Kept in `data/reference/collison/owner_revisions.geojson` so a re-seed keeps them.
 

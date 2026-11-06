@@ -48,8 +48,8 @@ document.title = 'Casey Fields Boulevard Plans';
 document.body.innerHTML = `
 <header class="top"><div class="brand"><div class="logo"></div><div><h1>Casey Fields Boulevard – contribution plans</h1><p>Plan maps placed on the ground, linked to each plan's project tables</p></div></div>
   <div class="areas" id="areas"></div><div class="sp"></div>
-  <button class="btn" id="bImp" title="Load Land acquired / Status back from an exported file">Import edits</button><input type="file" id="fImp" accept=".xlsx" hidden>
-  <button class="btn primary" id="bExp">Export to Excel</button></header>
+  <button class="btn" id="bImp" title="Restore edits from a file this app made: an Excel export (all edited columns, matched by Row ID) or a Changes for repo file (edits and added shapes)">Import edits</button><input type="file" id="fImp" accept=".xlsx,.geojson,.json" hidden>
+  <button class="btn primary" id="bExp" title="Every row of the plan areas switched on in the header, ignoring the table filters">Export to Excel</button></header>
 <div id="wrap">
   <div id="map">
     <aside id="panel" class="card"><div class="hd" id="phd"><span>Plan maps &amp; layers</span><span class="chev">▾</span></div><div class="bd">
@@ -79,7 +79,7 @@ document.body.innerHTML = `
       <button class="btn" id="bUndo" title="Discard all edits made in this browser" hidden>Discard edits</button>
       <span class="summary" id="summary"></span>
       <div class="pop" id="colPop"><button class="btn" id="bCols">Columns ▾</button><div class="menu" id="colMenu"></div></div>
-      <button class="btn" id="bExpF">Export shown rows</button>
+      <button class="btn" id="bExpF" title="Only the rows the table shows now (search, plan map, categories, map view and drawn-shape filters), in the table's sort order">Export shown rows</button>
       <button class="btn" id="bChg" title="Download your edits and added features for the repository: save into gis/edit/inbox/ and push (see docs/EDITING.md)">Changes for repo</button>
       <button class="btn" id="bGis" title="Download the shapes of the rows shown, with their table attributes and your edits, as GeoJSON (opens in QGIS; save as shapefile or GeoPackage there)">GIS export</button>
     </div>
@@ -313,12 +313,15 @@ $('bGis').onclick = () => {   // GeoJSON: every project shape with its table att
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `casey-fields-blvd-projects-${today}.geojson`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
 $('bImp').onclick = () => $('fImp').click();
-$('fImp').onchange = async e => { const f = e.target.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer()); let n = 0;
+$('fImp').onchange = async e => { const f = e.target.files[0]; if (!f) return;
+  if (/\.(geo)?json$/i.test(f.name)) { importChanges(JSON.parse(await f.text()), f.name); e.target.value = ''; return; }
+  const wb = XLSX.read(await f.arrayBuffer()); let n = 0, miss = 0;
+  if (!wb.Sheets.Details) { alert(`${f.name} has no "Details" sheet: only Excel files exported from this app can be imported.`); e.target.value = ''; return; }
   (wb.Sheets.Details ? XLSX.utils.sheet_to_json(wb.Sheets.Details) : []).forEach(r => { let rid = r['Row ID']; if (rid && !ROWS.some(x => x.rid === rid)) rid = ROWS.find(x => x.rid.endsWith(':' + rid))?.rid;
-    const row = ROWS.find(x => x.rid === rid); if (!row) return; const e = {};
+    const row = ROWS.find(x => x.rid === rid); if (!row) { miss++; return; } const e = {};
     D.columns.forEach(c => { if (!(c.label in r) || c.k === 'area_name') return; let v = r[c.label]; if (v === '' ) v = null; if (String(v ?? '') !== String(row[c.k] ?? '')) e[c.k] = v; });
     if (Object.keys(e).length) { EDITS[rid] = e; n++; } });
-  store.set(SK, EDITS); render(); if (SEL) showDetail(SEL); alert(`${n} rows with edits restored from ${f.name}`); e.target.value = ''; };
+  store.set(SK, EDITS); render(); if (SEL) showDetail(SEL); alert(`${n} rows with edits restored from ${f.name}` + (miss ? ` · ${miss} rows not found here (e.g. added features: import their Changes for repo file instead)` : '')); e.target.value = ''; };
 // ---------- drawing: filter by a drawn shape, add new features ----------
 const NEWK = 'cfb-new-features-v1'; let NEW = store.get(NEWK, []);
 function addNew(n) {
@@ -403,12 +406,24 @@ function addForm(geom, kind) {
     const num = v => v === '' ? null : +v;
     const row = {project_id: id, title: t, description: $('nD').value.trim(), category: $('nCat').value.trim() || 'Added feature', component: $('nComp').value.trim() || 'To be confirmed',
       land_ha: num($('nHa').value), total_cost_aud: num($('nCost').value), construction_cost_aud: num($('nCost').value), status: $('nSt').value.trim(), plan: AREA[a].name, table: 'Added by user'};
-    const n = {area: a, map: mp, cls: $('nC').value || `${mp.split(':')[1]}_added_${GT[kind]}`, rid: `${a}:${id}|${mp.split(':')[1]}|added`, row, geometry: geom};
+    const n = {area: a, map: mp, cls: $('nC').value || `${mp}_added_${GT[kind]}`, rid: `${a}:${id}|${mp.split(':')[1]}|added`, row, geometry: geom};
     if ($('nAcq').value.trim()) (EDITS[n.rid] ??= {}).acquired = $('nAcq').value.trim(), store.set(SK, EDITS);
     NEW.push(n); store.set(NEWK, NEW); addNew(n); map.getSource('f').setData({type: 'FeatureCollection', features: D.features});
     m.remove(); buildLayerList(); buildChips(); applyVis(); render(); select(`${a}:${id}|${mp}`, {zoom: false, scroll: true});
   };
   $('nId').focus();
+}
+function importChanges(fc, name) {   // a "Changes for repo" file: restores edits and added shapes (e.g. in another browser)
+  let ne = 0, nn = 0, skip = 0;
+  (fc.features || []).forEach(ft => { const p = {...ft.properties}, a = p.area, kind = p.change; if (!AREA[a]) { skip++; return; }
+    if (kind === 'edit') { const rid = a + ':' + p.rid; if (!ROWS.some(r => r.rid === rid)) { skip++; return; }
+      ['change', 'area', 'rid'].forEach(k => delete p[k]); EDITS[rid] = {...(EDITS[rid] || {}), ...p}; ne++; return; }
+    if (kind === 'new' && ft.geometry) { const rid = a + ':' + p.rid; if (NEW.some(n => n.rid === rid && JSON.stringify(n.geometry) === JSON.stringify(ft.geometry))) { skip++; return; }
+      const map = a + ':' + p.map, cls = a + ':' + p.cls; ['change', 'area', 'rid', 'map', 'cls'].forEach(k => delete p[k]);
+      const n = {area: a, map, cls: CLS[cls] ? cls : `${map}_added_${GT[{Point: 'point', LineString: 'line', Polygon: 'polygon'}[ft.geometry.type]]}`, rid, row: p, geometry: ft.geometry};
+      NEW.push(n); addNew(n); nn++; } else skip++; });
+  store.set(SK, EDITS); store.set(NEWK, NEW); map.getSource('f').setData({type: 'FeatureCollection', features: D.features});
+  buildLayerList(); buildChips(); applyVis(); render(); alert(`${name}: ${ne} edited rows and ${nn} added shapes restored` + (skip ? ` · ${skip} skipped (already here or not found)` : ''));
 }
 $('bChg').onclick = () => {   // edits + added features, for gis/edit/inbox/ (applied to the GeoPackage by the GitHub Action)
   const out = [], today = new Date().toISOString().slice(0, 10), strip = rid => rid.split(':').slice(1).join(':');
