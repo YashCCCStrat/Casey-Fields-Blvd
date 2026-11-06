@@ -2,6 +2,7 @@
 
 ## 2026-11-15 (latest)
 ### Changed
+- The printed-plan slider is now **Transparency** (0% = solid, default 35%); it was opacity, so 0% hid the plan. "Show printed plan" buttons made more visible.
 - Each plan's tick box now switches the whole plan on or off: all its legend items leave the map (and its rows leave the table); its legend items are greyed out until it is ticked again. Individual items can still be toggled while the plan is on. The printed plan has its own "Show printed plan" button.
 - Area counts in the header are table rows (Croskell 31, Collison 30), not distinct project IDs.
 

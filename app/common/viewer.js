@@ -52,7 +52,7 @@ document.body.innerHTML = `
   <div id="map">
     <aside id="panel" class="card"><div class="hd" id="phd"><span>Plan maps &amp; layers</span><span class="chev">▾</span></div><div class="bd">
       <div class="row" style="margin-top:8px"><span class="muted" style="width:70px">Basemap</span><select id="base" style="flex:1"><option value="imagery">Imagery</option><option value="streets">Streets</option><option value="none">None</option></select></div>
-      <div class="row" style="margin-top:8px"><span class="muted" style="width:70px">Plan maps</span><input type="range" id="opac" min="0" max="100" value="65"><span id="opacV" style="width:34px;text-align:right">65%</span></div>
+      <div class="row" style="margin-top:8px"><span class="muted" style="width:70px" title="Transparency of the printed plans: 0% = solid, 100% = invisible">Transparency</span><input type="range" id="opac" min="0" max="95" value="35"><span id="opacV" style="width:34px;text-align:right">35%</span></div>
       <div id="lyr"></div>
       <label class="lyr" style="margin-top:8px"><input type="checkbox" id="lblOn" checked> Project ID labels</label>
     </div></aside>
@@ -176,7 +176,7 @@ function buildMapFilter() {
 }
 $('lblOn').onchange = applyVis;
 $('phd').onclick = () => $('panel').classList.toggle('closed');
-$('opac').oninput = e => { $('opacV').textContent = e.target.value + '%'; Object.keys(D.images).forEach(m => map.setPaintProperty('img-' + m, 'raster-opacity', e.target.value / 100)); };
+$('opac').oninput = e => { $('opacV').textContent = e.target.value + '%'; Object.keys(D.images).forEach(m => map.setPaintProperty('img-' + m, 'raster-opacity', 1 - e.target.value / 100)); };
 $('base').onchange = e => { vis('imagery', e.target.value === 'imagery'); vis('streets', e.target.value === 'streets'); };
 function bboxOf(fs) { let b = [180, 90, -180, -90]; const w = c => typeof c[0] === 'number' ? (b = [Math.min(b[0], c[0]), Math.min(b[1], c[1]), Math.max(b[2], c[0]), Math.max(b[3], c[1])]) : c.forEach(w); fs.forEach(f => w(f.geometry.coordinates)); return b; }
 function fitAll() { if (!READY) return; const fs = D.features.filter(f => f.properties.key && AON.has(f.properties.area)); if (!fs.length) return; const b = bboxOf(fs); map.fitBounds([[b[0], b[1]], [b[2], b[3]]], {padding: {top: 40, bottom: 40, left: 320, right: 60}, duration: 500}); }
