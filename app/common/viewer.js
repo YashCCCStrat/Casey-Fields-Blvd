@@ -30,7 +30,9 @@ const SK = 'casey-fields-blvd-edits-v1';
 let EDITS = store.get(SK, null);
 if (!EDITS) { EDITS = {}; PL.forEach(P => Object.entries(store.get(P.meta.storage_key, {})).forEach(([k, v]) => EDITS[P.meta.id + ':' + k] = v)); }   // carry over earlier per-plan edits
 const ROWS = D.rows.map(r => ({...r, key: r.area + ':' + r.project_id + '|' + r.map}));
-const val = (r, k) => k === 'acquired' ? (EDITS[r.rid]?.acquired ?? '') : k === 'status' ? (EDITS[r.rid]?.status ?? r.status ?? '') : r[k];
+const val = (r, k) => (EDITS[r.rid] && k in EDITS[r.rid]) ? EDITS[r.rid][k] : (r[k] ?? (k === 'acquired' ? '' : r[k]));   // edits made in the app win
+const edited = (r, k) => !!EDITS[r.rid] && k in EDITS[r.rid] && String(EDITS[r.rid][k] ?? '') !== String(r[k] ?? '');
+let EDIT = false;
 D.features.forEach((f, i) => { f.id = i; });
 const FBYKEY = {}; D.features.forEach(f => { if (f.properties.key) (FBYKEY[f.properties.key] ??= []).push(f); });
 const rowsFor = key => ROWS.filter(r => r.key === key);
@@ -57,6 +59,12 @@ document.body.innerHTML = `
       <label class="lyr" style="margin-top:8px"><input type="checkbox" id="lblOn" checked> Project ID labels</label>
     </div></aside>
     <aside id="detail" class="card hidden"></aside>
+    <div id="drawbar" class="card">
+      <span class="dl">Filter by drawing</span><button data-d="filter:polygon" title="Draw an area: double-click to finish">▱ Area</button><button data-d="filter:line" title="Draw a line (projects within the buffer): double-click to finish">⟋ Line</button>
+      <label class="buf" title="Buffer around a drawn line">± <input id="bufM" type="number" value="50" min="5" step="5"> m</label>
+      <span class="sep"></span><span class="dl">Add feature</span><button data-d="add:point" title="Click once">• Point</button><button data-d="add:line" title="Double-click to finish">⟋ Line</button><button data-d="add:polygon" title="Double-click to finish">▱ Polygon</button>
+      <span id="drawhint" class="hint"></span></div>
+    <div id="shapechip" class="card" hidden><span>Filtered by drawn shape</span><button id="shapeX" title="Clear">✕</button></div>
   </div>
   <div id="resizer" title="Drag to resize"></div>
   <section id="bottom">
@@ -67,9 +75,13 @@ document.body.innerHTML = `
       <div class="brk"></div>
       <label class="toggle"><input type="checkbox" id="fView"> only projects in map view</label>
       <button class="btn" id="bClear">Reset</button>
+      <label class="toggle switch" title="Make every cell editable. Changes are kept in this browser and go into the Excel and GIS exports."><input type="checkbox" id="editOn"><span class="sl"></span> Edit table</label>
+      <button class="btn" id="bUndo" title="Discard all edits made in this browser" hidden>Discard edits</button>
       <span class="summary" id="summary"></span>
       <div class="pop" id="colPop"><button class="btn" id="bCols">Columns ▾</button><div class="menu" id="colMenu"></div></div>
       <button class="btn" id="bExpF">Export shown rows</button>
+      <button class="btn" id="bChg" title="Download your edits and added features for the repository: save into gis/edit/inbox/ and push (see docs/EDITING.md)">Changes for repo</button>
+      <button class="btn" id="bGis" title="Download the shapes of the rows shown, with their table attributes and your edits, as GeoJSON (opens in QGIS; save as shapefile or GeoPackage there)">GIS export</button>
     </div>
     <div id="tablewrap"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
   </section>
@@ -105,7 +117,7 @@ function swatch(c) {
   return `<span style="display:block;width:24px;height:14px;border-radius:3px;background:${bg};border:1.5px solid ${c.outline || c.color}${c.style === 'outline' ? ';background:transparent;border-style:dashed' : ''}"></span>${c.icon ? `<span style="margin-left:-20px">${ICONS[c.icon][3]}</span>` : ''}`;
 }
 const VIS = Object.fromEntries(Object.entries(CLS).map(([k, c]) => [k, c.on !== false]));
-let READY = false, SEL = null, HOV = null;
+let READY = false, SEL = null, HOV = null, DRAW = null, INSHAPE = null;
 const LIDS = [];   // [layer id, class]
 map.on('load', () => {
   map.addSource('f', {type: 'geojson', data: {type: 'FeatureCollection', features: D.features}});
@@ -133,7 +145,7 @@ map.on('load', () => {
   READY = true; applyVis(); fitAll();
   const pickable = () => LIDS.filter(([id, k]) => !CLS[k].context && map.getLayoutProperty(id, 'visibility') !== 'none' && !id.endsWith('-i')).map(([id]) => id);
   const tip = new maplibregl.Popup({closeButton: false, closeOnClick: false, offset: 14, maxWidth: '320px'});
-  map.on('mousemove', e => {
+  map.on('mousemove', e => { if (DRAW) return;
     const f = map.queryRenderedFeatures(e.point, {layers: pickable()}).find(x => x.properties.key);
     const k = f?.properties.key || null; map.getCanvas().style.cursor = k ? 'pointer' : '';
     if (k !== HOV) setHover(k);
@@ -141,7 +153,7 @@ map.on('load', () => {
     else tip.remove();
   });
   map.on('mouseout', () => { setHover(null); tip.remove(); });
-  map.on('click', e => { const f = map.queryRenderedFeatures(e.point, {layers: pickable()}).find(x => x.properties.key); select(f ? f.properties.key : null, {zoom: false, scroll: true}); });
+  map.on('click', e => { if (DRAW) return; const f = map.queryRenderedFeatures(e.point, {layers: pickable()}).find(x => x.properties.key); select(f ? f.properties.key : null, {zoom: false, scroll: true}); });
   map.on('moveend', () => { if ($('fView').checked) render(); });
 });
 const vis = (id, on) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
@@ -159,7 +171,7 @@ function buildAreas() {
 }
 function buildLayerList() {
   const count = k => new Set(D.features.filter(f => f.properties.cls === k && f.properties.key).map(f => f.properties.key)).size;
-  const row = k => `<div class="lyr ${VIS[k] ? '' : 'off'} ${CLS[k].map && !MAPON.has(CLS[k].map) ? 'dis' : ''}" data-k="${k}"><span class="sw">${swatch(CLS[k])}</span><span>${esc(CLS[k].label)}</span>${count(k) ? `<span class="n">${count(k)}</span>` : ''}</div>`;
+  const row = k => CLS[k].user && !count(k) ? '' : `<div class="lyr ${VIS[k] ? '' : 'off'} ${CLS[k].map && !MAPON.has(CLS[k].map) ? 'dis' : ''}" data-k="${k}"><span class="sw">${swatch(CLS[k])}</span><span>${esc(CLS[k].label)}</span>${count(k) ? `<span class="n">${count(k)}</span>` : ''}</div>`;
   $('lyr').innerHTML = AREAS.filter(a => AON.has(a.id)).map(a => `<div class="areahd"><span class="dot" style="background:${a.colour}"></span>${esc(a.name)}</div>` +
     D.maps.filter(m => m.area === a.id).map(m => `<div class="maphd"><label class="pm" title="Switch this plan's projects on or off (map and table)"><input type="checkbox" data-m="${m.id}" ${MAPON.has(m.id) ? 'checked' : ''}><span>${esc(m.title)}</span></label>${D.images[m.id] && MAPON.has(m.id) ? `<button class="printed ${IMGON.has(m.id) ? 'on' : ''}" data-i="${m.id}" title="Show the plan as printed, placed on the ground">🗺 ${IMGON.has(m.id) ? 'Hide' : 'Show'} printed plan</button>` : ''}${IMGON.has(m.id) && MAPON.has(m.id) ? `<div class="fit">${esc(D.images[m.id].fit.replace('boundary pixels: ', 'Placed by its boundary: ').replace(/ \(\d+ px\)/, ''))}</div>` : ''}</div>` +
       Object.keys(CLS).filter(k => CLS[k].map === m.id).map(row).join('')).join('') +
@@ -204,12 +216,13 @@ function showDetail(key) {
   const m = D.maps.find(x => x.id === r.map);
   $('detail').innerHTML = `<button class="x" id="dx" title="Close">✕</button><div class="dar"><span class="dot" style="background:${AREA[r.area].colour}"></span>${esc(AREA[r.area].name)}</div>
     <span class="pid" style="background:${c.color || '#555'};${light ? 'color:#222' : ''}">${esc(r.project_id)}</span> <span class="tag">${esc(r.category)}</span>
-    <h2>${esc(r.title)}</h2><div class="desc">${esc(r.description || '')}</div>` +
-    rs.map(x => `<dl>${D.detail[x.area].map(f => { const v = x[f.k]; return v == null || v === '' ? '' : `<dt>${esc(f.label)}</dt><dd>${esc(fmtv(v, f.t))}</dd>`; }).join('')}
+    <h2>${esc(val(r, 'title'))}</h2><div class="desc">${esc(val(r, 'description') || '')}</div>` +
+    rs.map(x => `<dl>${D.detail[x.area].map(f => { const v = val(x, f.k); return v == null || v === '' ? '' : `<dt>${esc(f.label)}</dt><dd>${esc(fmtv(v, f.t))}</dd>`; }).join('')}
       <dt>Land acquired</dt><dd>${esc(val(x, 'acquired')) || '<span style="color:var(--muted)">–</span>'}</dd><dt>Status</dt><dd style="text-align:left">${esc(val(x, 'status'))}</dd></dl>`).join('') +
-    `<div class="actions"><button class="btn" id="dz">Zoom to</button>${m && D.images[m.id] ? `<button class="btn" id="dm">${IMGON.has(m.id) ? 'Hide' : 'Show'} plan map</button>` : ''}</div>
+    `<div class="actions"><button class="btn" id="dz">Zoom to</button>${m && D.images[m.id] ? `<button class="btn" id="dm">${IMGON.has(m.id) ? 'Hide' : 'Show'} plan map</button>` : ''}${NEW.some(n => n.key === key) ? '<button class="btn" id="ddel" style="color:#b0103d">Delete added shape</button>' : ''}</div>
     <div class="fit" style="margin-top:8px">${esc(m ? m.title : '')}${(FBYKEY[key] || []).length ? '' : ' · not drawn on the plan map'}</div>`;
   $('detail').classList.remove('hidden'); $('dx').onclick = () => select(null); $('dz').onclick = () => select(key, {zoom: true});
+  if ($('ddel')) $('ddel').onclick = () => { if (confirm('Delete the shape(s) you added for ' + r.project_id + '?')) delNew(key); };
   if ($('dm')) $('dm').onclick = () => { IMGON.has(m.id) ? IMGON.delete(m.id) : IMGON.add(m.id); MAPON.add(m.id); applyVis(); showDetail(key); };
 }
 
@@ -232,7 +245,7 @@ let SORT = {k: null, dir: 1};
 function filtered() {
   const q = $('q').value.trim().toLowerCase(), mf = $('mapF').value; let inView = null;
   if ($('fView').checked && READY) { const b = map.getBounds(); inView = new Set(); D.features.forEach(f => { if (!f.properties.key) return; const x = bboxOf([f]); if (x[2] >= b.getWest() && x[0] <= b.getEast() && x[3] >= b.getSouth() && x[1] <= b.getNorth()) inView.add(f.properties.key); }); }
-  let rs = ROWS.filter(r => AON.has(r.area) && MAPON.has(r.map) && (!q || r.project_id.toLowerCase().includes(q)) && (!CATON.size || CATON.has(r.category)) && (!mf || r.map === mf) && (!inView || inView.has(r.key)));
+  let rs = ROWS.filter(r => AON.has(r.area) && MAPON.has(r.map) && (!q || r.project_id.toLowerCase().includes(q)) && (!CATON.size || CATON.has(r.category)) && (!mf || r.map === mf) && (!inView || inView.has(r.key)) && (!INSHAPE || INSHAPE.has(r.key)));
   if (SORT.k) rs = rs.slice().sort((a, b) => { const x = val(a, SORT.k), y = val(b, SORT.k); return (typeof x === 'number' || typeof y === 'number' ? (x ?? -1) - (y ?? -1) : String(x ?? '').localeCompare(String(y ?? ''), undefined, {numeric: true})) * SORT.dir; });
   return rs;
 }
@@ -241,24 +254,30 @@ function render() {
   $('th').innerHTML = '<tr>' + cols.map(c => `<th data-k="${c.k}" class="${['money', 'num'].includes(c.t) ? 'num' : ''}">${esc(c.label)}${SORT.k === c.k ? (SORT.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr>';
   $('th').querySelectorAll('th').forEach(th => th.onclick = () => { SORT = {k: th.dataset.k, dir: SORT.k === th.dataset.k ? -SORT.dir : 1}; render(); });
   $('tb').innerHTML = rs.length ? rs.map(r => `<tr data-key="${esc(r.key)}" data-rid="${esc(r.rid)}" class="${r.key === SEL ? 'sel' : ''}">` + cols.map(c =>
-      c.t === 'edit' ? `<td class="edit"><input data-f="${c.k}" value="${esc(val(r, c.k))}" placeholder="${c.k === 'acquired' ? (r.land_ha != null ? 'Yes / No / part' : '') : ''}"></td>`
+      (c.t === 'edit' || EDIT) && c.k !== 'area_name' ? `<td class="edit ${edited(r, c.k) ? 'chg' : ''} ${['money', 'num'].includes(c.t) ? 'num' : ''}" title="${edited(r, c.k) ? 'Edited – plan value: ' + esc(fmtv(r[c.k], c.t)) : ''}"><input data-f="${c.k}" data-t="${c.t || ''}" value="${esc(val(r, c.k) ?? '')}" placeholder="${c.k === 'acquired' ? (r.land_ha != null ? 'Yes / No / part' : '') : ''}"></td>`
       : c.t === 'id' ? `<td class="id"><i style="background:${colorOf(r)}"></i>${esc(r.project_id)}</td>`
       : c.k === 'area_name' ? `<td><span class="atag" style="--c:${AREA[r.area].colour}">${esc(r.area_name)}</span></td>`
       : c.k === 'component' ? `<td><span class="tag">${esc(r.component)}</span></td>`
-      : `<td class="${['money', 'num'].includes(c.t) ? 'num' : ''}">${esc(fmtv(val(r, c.k), c.t))}</td>`).join('') + '</tr>').join('')
+      : `<td class="${['money', 'num'].includes(c.t) ? 'num' : ''} ${edited(r, c.k) ? 'chg' : ''}">${esc(fmtv(val(r, c.k), c.t))}</td>`).join('') + '</tr>').join('')
     : `<tr><td class="empty" colspan="${cols.length}">${AON.size ? 'No projects match. <a href="#" id="rst">Reset filters</a>' : 'Turn on Croskell or Collison Estate at the top.'}</td></tr>`;
-  const tot = (D.totals || []).filter(t => rs.some(r => r[t.k] != null)).map(t => `${t.label} <b>${fmtv(rs.reduce((a, r) => a + (r[t.k] || 0), 0), t.t)}</b>`).join(' · ');
+  const tot = (D.totals || []).filter(t => rs.some(r => r[t.k] != null)).map(t => `${t.label} <b>${fmtv(rs.reduce((a, r) => a + (+val(r, t.k) || 0), 0), t.t)}</b>`).join(' · ');
+  const nEd = Object.values(EDITS).reduce((a, e) => a + Object.keys(e).length, 0); $('bUndo').hidden = !nEd; $('bUndo').textContent = `Discard edits (${nEd})`;
   $('summary').innerHTML = `<b>${rs.length}</b> of ${ROWS.filter(r => AON.has(r.area)).length} rows${tot ? ' · ' + tot : ''}`;
   if (READY) LIDS.concat([['labels', null]]).forEach(([id, k]) => { if (k && CLS[k].context) return; const base = k ? ['==', ['get', 'cls'], k] : ['has', 'project_id'];
     map.setFilter(id, ['all', base, ['any', ['!', ['has', 'key']], ['in', ['get', 'key'], ['literal', keys]]], ...(k ? [] : [['in', ['get', 'cls'], ['literal', Object.keys(CLS).filter(classShown)]]])]); });
   $('tb').querySelectorAll('tr[data-key]').forEach(tr => {
     tr.onmouseenter = () => setHover(tr.dataset.key); tr.onmouseleave = () => setHover(null);
     tr.onclick = e => { if (e.target.tagName !== 'INPUT') select(tr.dataset.key === SEL ? null : tr.dataset.key); };
-    tr.querySelectorAll('input').forEach(inp => inp.onchange = () => { (EDITS[tr.dataset.rid] ??= {})[inp.dataset.f] = inp.value; store.set(SK, EDITS); if (SEL === tr.dataset.key) showDetail(SEL); });
+    tr.querySelectorAll('input').forEach(inp => inp.onchange = () => { const r = ROWS.find(x => x.rid === tr.dataset.rid), k = inp.dataset.f;
+      let v = inp.value.trim(); if (['money', 'num'].includes(inp.dataset.t)) { const n = parseFloat(v.replace(/[$,\s%]/g, '')); v = v === '' ? null : isNaN(n) ? v : n; }
+      if (String(v ?? '') === String(r[k] ?? '')) { if (EDITS[r.rid]) { delete EDITS[r.rid][k]; if (!Object.keys(EDITS[r.rid]).length) delete EDITS[r.rid]; } } else (EDITS[r.rid] ??= {})[k] = v;
+      store.set(SK, EDITS); render(); if (SEL === tr.dataset.key) showDetail(SEL); });
   });
   $('rst')?.addEventListener('click', e => { e.preventDefault(); reset(); });
 }
-function reset() { $('q').value = ''; $('mapF').value = ''; CATON = new Set(); $('fView').checked = false; select(null); buildChips(); render(); fitAll(); }
+function reset() { clearShape(); $('q').value = ''; $('mapF').value = ''; CATON = new Set(); $('fView').checked = false; select(null); buildChips(); render(); fitAll(); }
+$('editOn').onchange = e => { EDIT = e.target.checked; document.body.classList.toggle('editing', EDIT); render(); };
+$('bUndo').onclick = () => { if (confirm('Discard all edits made in this browser? (Export to Excel first if you want to keep them.)')) { EDITS = {}; store.set(SK, EDITS); render(); if (SEL) showDetail(SEL); } };
 $('q').oninput = render; $('fView').onchange = render; $('mapF').onchange = render; $('bClear').onclick = reset;
 (() => { const bt = $('bottom'), h0 = store.get('cfb-h', null); if (h0) bt.style.height = h0 + 'px'; let y0, hh;
   $('resizer').onmousedown = e => { y0 = e.clientY; hh = bt.offsetHeight; const mv = ev => { bt.style.height = Math.max(110, Math.min(window.innerHeight - 220, hh - (ev.clientY - y0))) + 'px'; map.resize(); };
@@ -267,7 +286,8 @@ $('q').oninput = render; $('fView').onchange = render; $('mapF').onchange = rend
 // ---------- Excel ----------
 function exportXlsx(rows, label) {
   const E = D.export, aoa = [E.columns], today = new Date().toISOString().slice(0, 10);
-  rows.forEach(r => { const a = r.export.slice(); a[E.acquired_col] = val(r, 'acquired') || null; a[E.status_col] = val(r, 'status') || null; aoa.push(a); });
+  const fieldsOf = r => PL.find(P => P.meta.id === r.area).export.fields;
+  rows.forEach(r => aoa.push(fieldsOf(r).map(f => { const v = f.includes('{') ? f.replace(/\{(\w+)\}/g, (_, k) => val(r, k) ?? '').replace(/ – $/, '') : val(r, f); return v === '' || v == null ? null : v; })));
   const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = E.widths.map(w => ({wch: w}));
   for (let i = 2; i <= aoa.length; i++) { for (const c of ['H', 'I']) if (ws[c + i]) ws[c + i].z = '"$"#,##0.00'; if (ws['F' + i]) ws['F' + i].z = '0.0000'; }
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, ('project-register-' + today).slice(0, 31));
@@ -279,17 +299,125 @@ function exportXlsx(rows, label) {
     ['Plan areas', [...areasIn].join(', ')],
     ['Filters', [$('q').value && 'ID "' + $('q').value + '"', $('mapF').value && 'plan map: ' + $('mapF').selectedOptions[0].text, CATON.size && 'categories: ' + [...CATON].join(', '), $('fView').checked && 'in map view'].filter(Boolean).join('; ') || 'none'],
     ...AREAS.filter(a => [...areasIn].includes(a.short)).map(a => [a.short, a.source + (a.note ? ' – ' + a.note : '')]),
-    ['Edits', '"Land acquired" and "Current status" are entered in the app; "Import edits" restores them from this file.']]);
+    ['Edits', 'Values edited in the app are used throughout (Details sheet shows every column). "Import edits" restores them from this file.']]);
   n['!cols'] = [{wch: 14}, {wch: 120}]; XLSX.utils.book_append_sheet(wb, n, 'About');
   XLSX.writeFile(wb, `casey-fields-blvd-projects-${today}.xlsx`);
 }
 $('bExp').onclick = () => exportXlsx(ROWS.filter(r => AON.has(r.area)), 'all rows of the plan areas shown');
 $('bExpF').onclick = () => exportXlsx(filtered(), 'rows shown');
+$('bGis').onclick = () => {   // GeoJSON: every project shape with its table attributes (edits included), one feature per table row; opens in QGIS
+  const rows = filtered(), today = new Date().toISOString().slice(0, 10), out = [];
+  rows.forEach(r => (FBYKEY[r.key] || []).forEach(f => { const p = {plan_area: AREA[r.area].name, plan_map: D.maps.find(m => m.id === r.map)?.title || '', legend: CLS[f.properties.cls]?.label, row_id: r.rid.split(':').slice(1).join(':')};
+    D.columns.forEach(c => { if (c.k !== 'area_name') p[c.k] = val(r, c.k) ?? null; }); out.push({type: 'Feature', properties: p, geometry: f.geometry}); }));
+  const blob = new Blob([JSON.stringify({type: 'FeatureCollection', name: 'casey_fields_blvd_projects', crs: {type: 'name', properties: {name: 'urn:ogc:def:crs:OGC:1.3:CRS84'}}, features: out})], {type: 'application/geo+json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `casey-fields-blvd-projects-${today}.geojson`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
 $('bImp').onclick = () => $('fImp').click();
 $('fImp').onchange = async e => { const f = e.target.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer()); let n = 0;
   (wb.Sheets.Details ? XLSX.utils.sheet_to_json(wb.Sheets.Details) : []).forEach(r => { let rid = r['Row ID']; if (rid && !ROWS.some(x => x.rid === rid)) rid = ROWS.find(x => x.rid.endsWith(':' + rid))?.rid;
-    if (rid && ROWS.some(x => x.rid === rid)) { EDITS[rid] = {acquired: r['Land acquired'] ?? '', status: r['Status'] ?? r['Current status'] ?? ''}; n++; } });
-  store.set(SK, EDITS); render(); if (SEL) showDetail(SEL); alert(`${n} rows restored from ${f.name}`); e.target.value = ''; };
+    const row = ROWS.find(x => x.rid === rid); if (!row) return; const e = {};
+    D.columns.forEach(c => { if (!(c.label in r) || c.k === 'area_name') return; let v = r[c.label]; if (v === '' ) v = null; if (String(v ?? '') !== String(row[c.k] ?? '')) e[c.k] = v; });
+    if (Object.keys(e).length) { EDITS[rid] = e; n++; } });
+  store.set(SK, EDITS); render(); if (SEL) showDetail(SEL); alert(`${n} rows with edits restored from ${f.name}`); e.target.value = ''; };
+// ---------- drawing: filter by a drawn shape, add new features ----------
+const NEWK = 'cfb-new-features-v1'; let NEW = store.get(NEWK, []);
+function addNew(n) {
+  const a = n.area, key = n.key = `${a}:${n.row.project_id}|${n.map}`, exists = ROWS.find(r => r.key === key);
+  if (!exists) ROWS.push({...n.row, rid: n.rid, map: n.map, area: a, area_name: AREA[a].short, key, isNew: true});
+  const f = {type: 'Feature', id: D.features.length, properties: {cls: n.cls, map: n.map, area: a, project_id: n.row.project_id, key, isNew: 1}, geometry: n.geometry};
+  D.features.push(f); (FBYKEY[key] ??= []).push(f);
+}
+NEW.forEach(addNew);
+function delNew(key) {   // removes shapes added in this browser for the key, and the row if it was new
+  NEW = NEW.filter(n => n.key !== key); store.set(NEWK, NEW);
+  for (let i = D.features.length - 1; i >= 0; i--) if (D.features[i].properties.isNew && D.features[i].properties.key === key) D.features.splice(i, 1);
+  D.features.forEach((f, i) => { f.id = i; }); FBYKEY[key] = (FBYKEY[key] || []).filter(f => !f.properties.isNew); if (!FBYKEY[key].length) delete FBYKEY[key];
+  for (let i = ROWS.length - 1; i >= 0; i--) if (ROWS[i].isNew && ROWS[i].key === key) { delete EDITS[ROWS[i].rid]; ROWS.splice(i, 1); }
+  store.set(SK, EDITS); map.removeFeatureState({source: 'f'}); map.getSource('f').setData({type: 'FeatureCollection', features: D.features}); select(null); buildLayerList(); buildChips(); render();
+}
+map.on('load', () => {
+  map.addSource('drawn', {type: 'geojson', data: {type: 'FeatureCollection', features: []}});
+  map.addLayer({id: 'drawn-fill', type: 'fill', source: 'drawn', filter: ['==', ['geometry-type'], 'Polygon'], paint: {'fill-color': '#e0218a', 'fill-opacity': .12}});
+  map.addLayer({id: 'drawn-line', type: 'line', source: 'drawn', paint: {'line-color': '#e0218a', 'line-width': 2.5, 'line-dasharray': [2, 1.5]}});
+  map.addLayer({id: 'drawn-pt', type: 'circle', source: 'drawn', filter: ['==', ['geometry-type'], 'Point'], paint: {'circle-radius': 4, 'circle-color': '#fff', 'circle-stroke-color': '#e0218a', 'circle-stroke-width': 2}});
+  if (NEW.length) map.getSource('f').setData({type: 'FeatureCollection', features: D.features});
+});
+const showDrawn = fs => map.getSource('drawn') && map.getSource('drawn').setData({type: 'FeatureCollection', features: fs});
+function sketch(cursor) {
+  if (!DRAW) return showDrawn([]); const p = DRAW.pts.concat(cursor ? [cursor] : []), fs = p.map(c => turf.point(c));
+  if (DRAW.kind === 'polygon' && p.length >= 3) fs.push(turf.polygon([[...p, p[0]]])); else if (p.length >= 2) fs.push(turf.lineString(p));
+  showDrawn(fs);
+}
+function startDraw(mode, kind) {
+  cancelDraw(); DRAW = {mode, kind, pts: []}; map.doubleClickZoom.disable(); map.getCanvas().style.cursor = 'crosshair';
+  document.querySelectorAll('#drawbar button').forEach(b => b.classList.toggle('on', b.dataset.d === mode + ':' + kind));
+  $('drawhint').textContent = kind === 'point' ? 'Click on the map · Esc to cancel' : `Click to add points · double-click or Enter to finish · Esc to cancel`;
+}
+function cancelDraw() { DRAW = null; map.doubleClickZoom.enable(); map.getCanvas().style.cursor = ''; document.querySelectorAll('#drawbar button').forEach(b => b.classList.remove('on')); $('drawhint').textContent = ''; if (!INSHAPE) showDrawn([]); }
+function finishDraw() {
+  const d = DRAW; if (!d) return; const p = d.pts;
+  if ((d.kind === 'line' && p.length < 2) || (d.kind === 'polygon' && p.length < 3)) return;
+  const geom = d.kind === 'point' ? {type: 'Point', coordinates: p[0]} : d.kind === 'line' ? {type: 'LineString', coordinates: p} : {type: 'Polygon', coordinates: [[...p, p[0]]]};
+  cancelDraw();
+  if (d.mode === 'filter') applyShape(geom); else addForm(geom, d.kind);
+}
+document.querySelectorAll('#drawbar button').forEach(b => b.onclick = () => { const [m, k] = b.dataset.d.split(':'); DRAW && b.classList.contains('on') ? cancelDraw() : startDraw(m, k); });
+map.on('click', e => { if (!DRAW) return; DRAW.pts.push([e.lngLat.lng, e.lngLat.lat]); if (DRAW.kind === 'point') finishDraw(); else sketch(); });
+map.on('dblclick', e => { if (DRAW) { e.preventDefault(); DRAW.pts.pop(); finishDraw(); } });
+map.on('mousemove', e => { if (DRAW && DRAW.pts.length) sketch([e.lngLat.lng, e.lngLat.lat]); });
+document.addEventListener('keydown', e => { if (!DRAW) return; if (e.key === 'Escape') cancelDraw(); if (e.key === 'Enter') finishDraw(); });
+function applyShape(geom) {
+  const area = geom.type === 'LineString' ? turf.buffer(turf.lineString(geom.coordinates), Math.max(1, +$('bufM').value || 50), {units: 'meters'}) : turf.polygon(geom.coordinates);
+  INSHAPE = new Set(D.features.filter(f => f.properties.key && AON.has(f.properties.area) && turf.booleanIntersects(f, area)).map(f => f.properties.key));
+  showDrawn([area, ...(geom.type === 'LineString' ? [turf.lineString(geom.coordinates)] : [])]); $('shapechip').hidden = false;
+  $('shapechip').querySelector('span').textContent = `Filtered by drawn ${geom.type === 'LineString' ? 'line (± ' + (+$('bufM').value || 50) + ' m)' : 'area'}: ${INSHAPE.size} projects`;
+  render();
+}
+function clearShape() { INSHAPE = null; $('shapechip').hidden = true; if (!DRAW) showDrawn([]); }
+$('shapeX').onclick = () => { clearShape(); render(); };
+const KIND = {point: 'point', line: 'line', polygon: 'fill'}, GT = {point: 'points', line: 'lines', polygon: 'polygons'};
+function addForm(geom, kind) {
+  const areas = AREAS.filter(a => AON.has(a.id)); if (!areas.length) return alert('Turn on a plan area first.');
+  const opt = (v, t, sel) => `<option value="${esc(v)}" ${sel ? 'selected' : ''}>${esc(t)}</option>`;
+  const dl = (id, k) => `<datalist id="${id}">${[...new Set(ROWS.map(r => r[k]).filter(Boolean))].map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
+  const m = document.createElement('div'); m.id = 'modal'; m.innerHTML = `<div class="dlg card"><h2>New ${kind}: project details</h2><p class="fit">A new row is added to the table. It is kept in this browser until you send it to the repository with “Changes for repo”.</p>
+    <div class="grid"><label>Plan area<select id="nA">${areas.map(a => opt(a.id, a.name)).join('')}</select></label><label>Plan map<select id="nM"></select></label>
+    <label>Legend class<select id="nC"></select></label><label>Project ID *<input id="nId" placeholder="e.g. RD07 or CK-RD-02" list="dlId"></label>
+    <label>Category<input id="nCat" list="dlCat"></label><label>Levy component<input id="nComp" list="dlComp"></label>
+    <label class="w">Title *<input id="nT"></label><label class="w">Description<input id="nD"></label>
+    <label>Land (ha)<input id="nHa" type="number" step="0.0001"></label><label>Total cost ($)<input id="nCost" type="number" step="1"></label>
+    <label>Land acquired<input id="nAcq" placeholder="Yes / No / part"></label><label>Status<input id="nSt" value="Proposed – added by user"></label></div>
+    ${dl('dlCat', 'category')}${dl('dlComp', 'component')}${dl('dlId', 'project_id')}<p class="fit" id="nMsg"></p>
+    <div class="actions" style="justify-content:flex-end"><button class="btn" id="nCancel">Cancel</button><button class="btn primary" id="nSave">Add to table</button></div></div>`;
+  document.body.appendChild(m);
+  const fillMaps = () => { const a = $('nA').value; $('nM').innerHTML = D.maps.filter(x => x.area === a).map(x => opt(x.id, x.title)).join(''); fillCls(); };
+  const fillCls = () => { const mp = $('nM').value, ks = Object.keys(CLS).filter(k => CLS[k].map === mp && CLS[k].kind === KIND[kind] && !CLS[k].context);
+    $('nC').innerHTML = ks.map(k => opt(k, CLS[k].label, CLS[k].user)).join(''); };
+  $('nA').onchange = fillMaps; $('nM').onchange = fillCls; fillMaps();
+  $('nId').oninput = () => { const a = $('nA').value, r = ROWS.find(x => x.area === a && x.project_id === $('nId').value.trim());
+    $('nMsg').textContent = r ? `${r.project_id} already exists (${r.title}) – this shape will be added to it${r.map !== $('nM').value ? ' on a different plan map, as a new row' : ''}.` : ''; if (r && !$('nT').value) { $('nT').value = r.title || ''; $('nCat').value = r.category || ''; } };
+  $('nCancel').onclick = () => { m.remove(); };
+  $('nSave').onclick = () => {
+    const a = $('nA').value, mp = $('nM').value, id = $('nId').value.trim(), t = $('nT').value.trim();
+    if (!id || !t) { $('nMsg').textContent = 'Project ID and title are required.'; return; }
+    const num = v => v === '' ? null : +v;
+    const row = {project_id: id, title: t, description: $('nD').value.trim(), category: $('nCat').value.trim() || 'Added feature', component: $('nComp').value.trim() || 'To be confirmed',
+      land_ha: num($('nHa').value), total_cost_aud: num($('nCost').value), construction_cost_aud: num($('nCost').value), status: $('nSt').value.trim(), plan: AREA[a].name, table: 'Added by user'};
+    const n = {area: a, map: mp, cls: $('nC').value || `${mp.split(':')[1]}_added_${GT[kind]}`, rid: `${a}:${id}|${mp.split(':')[1]}|added`, row, geometry: geom};
+    if ($('nAcq').value.trim()) (EDITS[n.rid] ??= {}).acquired = $('nAcq').value.trim(), store.set(SK, EDITS);
+    NEW.push(n); store.set(NEWK, NEW); addNew(n); map.getSource('f').setData({type: 'FeatureCollection', features: D.features});
+    m.remove(); buildLayerList(); buildChips(); applyVis(); render(); select(`${a}:${id}|${mp}`, {zoom: false, scroll: true});
+  };
+  $('nId').focus();
+}
+$('bChg').onclick = () => {   // edits + added features, for gis/edit/inbox/ (applied to the GeoPackage by the GitHub Action)
+  const out = [], today = new Date().toISOString().slice(0, 10), strip = rid => rid.split(':').slice(1).join(':');
+  NEW.forEach(n => out.push({type: 'Feature', geometry: n.geometry, properties: {change: 'new', area: n.area, map: n.map.split(':')[1], cls: n.cls.split(':').slice(1).join(':'), rid: strip(n.rid), ...n.row, ...(EDITS[n.rid] || {})}}));
+  Object.entries(EDITS).forEach(([rid, e]) => { if (!NEW.some(n => n.rid === rid) && Object.keys(e).length) out.push({type: 'Feature', geometry: null, properties: {change: 'edit', area: rid.split(':')[0], rid: strip(rid), ...e}}); });
+  if (!out.length) return alert('No edits or added features yet.');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({type: 'FeatureCollection', features: out}, null, 1)], {type: 'application/geo+json'}));
+  a.download = `changes-${today}.geojson`; a.click(); alert(`${out.length} changes saved. Put the file in gis/edit/inbox/ in your copy of the repository and push it (GitHub Desktop): the repository applies them and rebuilds the app.`);
+};
 window.APP = {map, select, get READY() { return READY; }, get SEL() { return SEL; }, FBYKEY, AON, IMGON, MAPON, applyVis};
 applyVis();
 })();

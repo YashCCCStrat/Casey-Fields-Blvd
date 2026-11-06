@@ -114,8 +114,7 @@ classes = {
     'p4_fus': dict(label='VPA surveyed land (comparison)', kind='fill', style='outline', color='#0a7d5f', outline='#0a7d5f', map='plan4', on=False),
     'psp': dict(label='Precinct boundary (PSP 1051)', kind='line', color='#24337a', width=2.5, dash='long', map='', context=True)}
 for r in rows:
-    r['export'] = [r['plan'], r['project_id'], r['category'], ' – '.join(x for x in (r['title'], r['description']) if x), r['component'], r['land_ha'], None,
-                   None, None if r['table'] == 'Table 8' else r['total_cost_aud'], r['corridor_segment'] or None, None]
+    r['land_cost_aud'] = None; r['construction_cost_aud'] = None if r['table'] == 'Table 8' else r['total_cost_aud']
     r['rid'] = r['project_id'] + '|' + r['component']
 ES = json.loads((ROOT / 'data/reference/export_schema.json').read_text())
 write_app(ROOT / 'app/croskell/data.js', dict(
@@ -126,10 +125,10 @@ write_app(ROOT / 'app/croskell/data.js', dict(
     columns=[dict(k='project_id', label='Project ID', t='id'), dict(k='category', label='Category'), dict(k='title', label='Title'), dict(k='description', label='Description', show=False),
              dict(k='component', label='Levy component'), dict(k='table', label='Table', show=False), dict(k='staging', label='Staging', show=False), dict(k='land_ha', label='Land ha', t='num'),
              dict(k='total_cost_aud', label='Total cost', t='money'), dict(k='apportionment_pct', label='Appt. %', t='num', show=False), dict(k='cost_to_icp_aud', label='To ICP', t='money'),
-             dict(k='cost_per_ha_aud', label='Cost / ha', t='money', show=False), dict(k='corridor_segment', label='Corridor segment', show=False),
+             dict(k='cost_per_ha_aud', label='Cost / ha', t='money', show=False), dict(k='construction_cost_aud', label='Construction (export)', t='money', show=False), dict(k='corridor_segment', label='Corridor segment', show=False),
              dict(k='acquired', label='Land acquired', t='edit'), dict(k='status', label='Status', t='edit')],
     detail=[dict(k='component', label='Levy component'), dict(k='table', label='Table'), dict(k='land_ha', label='Public purpose land', t='ha'), dict(k='total_cost_aud', label='Total estimated cost', t='money'),
             dict(k='apportionment_pct', label='Apportioned to ICP', t='pct'), dict(k='cost_to_icp_aud', label='Cost to ICP', t='money'), dict(k='cost_per_ha_aud', label='Cost per ha', t='money'),
             dict(k='staging', label='Staging'), dict(k='funding_source', label='Funding source'), dict(k='footnote', label='Footnote'), dict(k='corridor_segment', label='Corridor segment')],
     totals=[dict(k='total_cost_aud', label='cost', t='money'), dict(k='cost_to_icp_aud', label='to ICP', t='money'), dict(k='land_ha', label='land ha', t='num')],
-    export=dict(columns=ES['columns'], widths=ES['widths'], acquired_col=6, status_col=10, note='Land cost is not used: ICP land is provided in kind and equalised per parcel (Table 11).')))
+    export=dict(columns=ES['columns'], widths=ES['widths'], fields=['plan', 'project_id', 'category', '{title} – {description}', 'component', 'land_ha', 'acquired', 'land_cost_aud', 'construction_cost_aud', 'corridor_segment', 'status'], note='Land cost is not used: ICP land is provided in kind and equalised per parcel (Table 11).')))

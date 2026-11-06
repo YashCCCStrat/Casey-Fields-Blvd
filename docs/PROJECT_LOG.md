@@ -1,5 +1,9 @@
 # Project log
 
+## Latest
+- Owner wants to edit every column, keep the shapes as shapefiles with their table for QGIS, make them more accurate there and push back; add points, lines and polygons with an automatic table row; and filter projects by drawing. **Decision:** one GeoPackage (`gis/edit/`) is the editable source of truth; a GitHub Action rebuilds the app and shapefiles from it. Shapefiles are export-only (10-character field names, no multi-layer joins). App changes reach the repository as a GeoJSON file in `gis/edit/inbox/` that the Action applies, because the static app cannot write to GitHub without a token in the page.
+- The Action cannot be tested from the sandbox; its steps were run locally (apply, check, build, export) on a test inbox file and a QGIS-drawn point.
+
 ## 2026-11-15
 - Owner wants Croskell and Collison viewable together, not chosen on a landing page. **Decision:** one page; plan areas are on/off switches; printed plan maps are independent overlays.
 

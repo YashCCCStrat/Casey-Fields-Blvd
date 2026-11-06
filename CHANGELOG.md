@@ -1,6 +1,15 @@
 # Changelog
 
-## 2026-11-15 (latest)
+## Latest – editing, QGIS round trip, drawing
+### Added
+- **Edit every column** in the table (Edit table switch); Excel export and Import edits carry all columns.
+- **Draw to add a feature** (point, line or polygon) on the map: a form fills in the new project row (plan area, plan map, legend class, ID, title, costs, status …); kept in the browser, deletable from the project card. New legend class *Added feature* per plan map.
+- **Filter by drawing** an area, or a line with a buffer (default ± 50 m): the table keeps only projects touching it.
+- **Changes for repo**: downloads your edits and added features as GeoJSON for `gis/edit/inbox/`; the GitHub Action applies them to the GeoPackage and rebuilds the app.
+- **GIS export** (GeoJSON, one feature per table row, with edits).
+- **Editable GeoPackage** `gis/edit/casey_fields_blvd.gpkg` as the source of truth, with a ready **QGIS project** `gis/edit/casey_fields_blvd.qgz` (styled as the app, joined to the tables, printed plans underneath) and **shapefiles** with their table attributes (`gis/edit/shapefiles/`, zip). Shapes drawn in QGIS with a new project ID get a table row automatically. See `docs/EDITING.md`.
+
+## 2026-11-15 (later still)
 ### Fixed (owner feedback, Collison)
 - ID label pills (RD05, DR01 …) are no longer part of the road and drainage shapes: labels are found by their white lettering and removed, and each bar is rebuilt as straight segments fitted to the printed colour at its printed width (RD02, RD05 straight; drainage channel areas now within ~10% of T6).
 - Pipes fitted to the printed blue dashes (DR16 moved onto them; lengths within 4% of T6 except DR15).

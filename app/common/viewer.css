@@ -45,7 +45,7 @@ select{border:1px solid var(--line);background:var(--panel);border-radius:8px;pa
 #detail .desc{color:var(--muted);font-size:12.5px;margin-bottom:8px}
 #detail dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line)}
 #detail dt{color:var(--muted)}#detail dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
-#detail .actions{display:flex;gap:6px;margin-top:10px}
+#detail .actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 #resizer{height:8px;cursor:ns-resize;background:var(--bg);position:relative;flex:none}
 #resizer:after{content:"";position:absolute;left:50%;top:2px;width:44px;height:4px;margin-left:-22px;border-radius:3px;background:var(--line)}
 #bottom{height:38%;min-height:110px;display:flex;flex-direction:column;background:var(--panel);border-top:1px solid var(--line);flex:none}
@@ -116,3 +116,34 @@ td:nth-child(4){min-width:200px;max-width:300px}
 .printed{margin:5px 0 2px 22px;border:1px solid var(--accent);background:var(--panel);color:var(--accent)!important;font-weight:600;border-radius:8px;padding:3px 9px;font-size:11.5px;cursor:pointer;color:var(--muted)}
 .printed:hover{border-color:var(--accent);color:var(--accent)}
 .printed.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+
+/* edit mode */
+td.chg,td.chg input{background:color-mix(in srgb,#ffb000 16%,transparent)!important}
+td.edit.num input{text-align:right}
+body.editing td.edit input{border-color:var(--line);background:var(--panel)}
+.switch{gap:8px;cursor:pointer;color:var(--ink);font-weight:600}
+.switch input{display:none}
+.switch .sl{width:30px;height:17px;border-radius:9px;background:var(--line);position:relative;transition:.15s;flex:none}
+.switch .sl:after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.switch input:checked+.sl{background:var(--accent)}.switch input:checked+.sl:after{left:15px}
+
+/* drawing */
+#drawbar{top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:5px 8px;flex-wrap:wrap;max-width:calc(100% - 440px)}
+#drawbar .dl{font-size:11px;color:var(--muted);font-weight:600;margin:0 2px 0 4px}
+#drawbar button{border:1px solid transparent;background:transparent;border-radius:7px;padding:4px 8px;cursor:pointer;font-weight:550}
+#drawbar button:hover{background:var(--soft)}#drawbar button.on{background:#e0218a;color:#fff}
+#drawbar .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+#drawbar .buf{font-size:11.5px;color:var(--muted)}#drawbar .buf input{width:46px;border:1px solid var(--line);border-radius:6px;padding:2px 4px;background:var(--panel)}
+#drawbar .hint{font-size:11.5px;color:#e0218a;margin-left:4px}
+#shapechip{bottom:12px;left:50%;transform:translateX(-50%);padding:6px 6px 6px 12px;display:flex;gap:8px;align-items:center;border-color:#e0218a;font-weight:600}
+#shapechip button{border:0;background:var(--soft);border-radius:6px;width:24px;height:24px;cursor:pointer}
+#modal{position:fixed;inset:0;background:rgba(10,20,30,.35);z-index:50;display:flex;align-items:center;justify-content:center}
+#modal .dlg{position:static;overflow-x:hidden;transform:none;width:min(620px,94vw);padding:18px 20px;max-height:90vh;overflow:auto}
+#modal h2{margin:0 0 4px;font-size:16px}
+#modal .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 14px;margin:12px 0}
+#modal label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600}
+#modal label.w{grid-column:1/-1}
+#modal input,#modal select{width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--panel);color:var(--ink);font-weight:400}
+#modal .actions{display:flex;gap:8px}
+@media (max-width:1100px){#drawbar{left:12px;transform:none;top:auto;bottom:12px;max-width:calc(100% - 24px)}}
+#shapechip[hidden]{display:none}

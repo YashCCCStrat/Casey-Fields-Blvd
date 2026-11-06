@@ -31,3 +31,15 @@
    each; intersections are the carriageways of the two named roads (OSM) within the symbol, plus the junction; pipes
    are traced lines (lengths within 2% of T6 except DR15 74 m vs 99 m); CF01 is the community-facility fill by its star.
    Drawn areas are 1–2× the land in T5/T6 because the plan draws bars wider than the land strip.
+
+## Editing and drawing (all areas)
+- The app reads shapes and table rows built from `gis/edit/casey_fields_blvd.gpkg`; see `docs/EDITING.md` for the workflow.
+- **Filter by drawing:** a drawn polygon is used as is; a drawn line is buffered by the given distance (turf.js, metres).
+  A project stays in the table if any of its shapes intersects the result (touching counts).
+- **Added features** get legend class *Added feature* (magenta) unless another class of the same geometry kind is
+  chosen; their row id is `<ID>|<map>|added`. In the repository, `apply_inbox.py` appends the shape to
+  `<area>_<map>_<polygons|lines|points>` and adds the row unless that project ID already has a row on that plan map.
+- **QGIS-drawn shapes** with a new project ID get a row with title / category / note from the shape and status
+  *Added in QGIS – fill in details*; an empty `map` or `cls` is filled in from the layer name.
+- **Shapefile export** joins each shape to its table rows on project ID **and plan map** (a Croskell Plan 2 road shape
+  carries its construction rows; its Plan 4 land shape carries the land row).

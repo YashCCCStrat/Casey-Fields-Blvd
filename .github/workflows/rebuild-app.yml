@@ -1,0 +1,38 @@
+# Rebuilds the app (app/*/data.js) and the shapefile export whenever the editable GeoPackage, or a 'Changes for repo'
+# file from the app (gis/edit/inbox/*.geojson), is pushed. tools/apply_inbox.py first applies inbox files and gives
+# shapes drawn in QGIS a table row.
+# Edit gis/edit/casey_fields_blvd.gpkg in QGIS (gis/edit/casey_fields_blvd.qgz), commit and push; this checks the edits
+# (tools/check_edits.py – the run fails and nothing changes if a project ID or legend class is wrong) and commits the
+# rebuilt files back to main. See docs/EDITING.md.
+name: Rebuild app from GIS edits
+on:
+  push:
+    branches: [main]
+    paths: ['gis/edit/casey_fields_blvd.gpkg', 'gis/edit/inbox/**', 'tools/apply_inbox.py', 'data/app/*_spec.json', 'tools/build_app.py', 'tools/check_edits.py', 'tools/export_shapefiles.py']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: {group: rebuild-app, cancel-in-progress: false}
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install --quiet geopandas pyogrio pandas shapely numpy
+      - name: Apply app changes (inbox) and new QGIS shapes
+        run: python tools/apply_inbox.py
+      - name: Check the edits
+        run: python tools/check_edits.py
+      - name: Rebuild app data and shapefiles
+        run: |
+          python tools/build_app.py
+          python tools/export_shapefiles.py
+      - name: Commit the rebuilt files
+        run: |
+          git config user.name "Yashar"; git config user.email "yjamei@casey.vic.gov.au"
+          git add -A app gis/edit/shapefiles gis/edit/casey_fields_blvd_shapefiles.zip gis/edit/casey_fields_blvd.gpkg gis/edit/inbox
+          if git diff --cached --quiet; then echo "Nothing to rebuild"; exit 0; fi
+          git commit -q -m "Apply edits; rebuild app and shapefiles (${GITHUB_SHA::7})"
+          git pull --rebase -q origin main && git push origin HEAD:main

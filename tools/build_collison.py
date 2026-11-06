@@ -175,8 +175,7 @@ for r in T.itertuples():
                      pipe_m=None if pd.isna(r.pipe_length_m) else r.pipe_length_m, land_cost_aud=None if pd.isna(r.land_cost_aud) else r.land_cost_aud,
                      construction_cost_aud=r.construction_cost_aud, total_cost_aud=r.total_cost_aud, apportionment_pct=r.apportionment_pct,
                      cost_to_mca_aud=r.cost_to_mca_aud, levy_per_ndha_aud=r.levy_per_ndha_aud, corridor_segment=corr.get(r.project_id, ''), status=STATUS,
-                     export=['Collison Estate DCP', r.project_id, cat(r.project_id), f'{r.title} – {r.description}', comp, None if pd.isna(r.land_ha) else r.land_ha, None,
-                             None if pd.isna(r.land_cost_aud) else r.land_cost_aud, r.construction_cost_aud, corr.get(r.project_id, '') or None, None]))
+                     plan='Collison Estate DCP'))
 classes = {
     'road': dict(label='Road (RD)', kind='fill', color='#93305b', outline='#5a1634', map='fig3'),
     'int': dict(label='Intersection (IN)', kind='fill', color='#f7941d', outline='#b35f00', map='fig3'),
@@ -206,4 +205,4 @@ write_app(ROOT / 'app/collison/data.js', dict(
             dict(k='corridor_segment', label='Corridor segment')],
     totals=[dict(k='total_cost_aud', label='total cost', t='money'), dict(k='cost_to_mca_aud', label='to MCA', t='money'), dict(k='levy_per_ndha_aud', label='levy / NDHa', t='money')],
     export=dict(columns=json.loads((ROOT / 'data/reference/export_schema.json').read_text())['columns'], widths=json.loads((ROOT / 'data/reference/export_schema.json').read_text())['widths'],
-                acquired_col=6, status_col=10, note='Land cost and construction cost from T11 (July 2024 dollars).')))
+                fields=['plan', 'project_id', 'category', '{title} – {description}', 'component', 'land_ha', 'acquired', 'land_cost_aud', 'construction_cost_aud', 'corridor_segment', 'status'], note='Land cost and construction cost from T11 (July 2024 dollars).')))

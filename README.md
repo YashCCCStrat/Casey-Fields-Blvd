@@ -11,6 +11,7 @@ Started 2026-11-13 from [YashCCCStrat/Contribution-Plans](https://github.com/Yas
 |---|---|
 | `sources/pdfs/` | Plan documents the corridor touches (see `sources/README.md`) |
 | `gis/corridor/` | Draft corridor line and 100/250/500 m buffers, VPA precincts, DCPO/ICO overlays |
+| `gis/edit/` | **Editable** GeoPackage (source of truth), QGIS project, shapefiles, inbox for app changes – see `docs/EDITING.md` |
 | `gis/croskell/` | Croskell (Employment) ICP: georeferenced plan maps, project and land layers, QGIS project |
 | `data/reference/` | Reference tables (e.g. the 37 corridor projects from the Contribution-Plans register) |
 | `data/private/` | Casey-internal data – git-ignored, never committed |
