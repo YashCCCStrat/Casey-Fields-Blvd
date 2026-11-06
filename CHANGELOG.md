@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-15 (latest)
+### Changed
+- Each plan's tick box now switches the whole plan on or off: all its legend items leave the map (and its rows leave the table); its legend items are greyed out until it is ticked again. Individual items can still be toggled while the plan is on. The printed plan has its own "Show printed plan" button.
+- Area counts in the header are table rows (Croskell 31, Collison 30), not distinct project IDs.
+
 ## 2026-11-15 (later)
 ### Changed
 - **One page for all plan areas** (`app/index.html`): Croskell and Collison on the same map and table. Area switches in the header (both on by default) filter map, legend, table, totals and export; any number of plan maps can be shown as printed at once (tick them in the panel, or "Show plan map" on a project's card); "All plan maps" filter in the toolbar; a "Plan area" column. Edits from the earlier per-plan pages carry over.

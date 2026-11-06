@@ -38,7 +38,8 @@ const CLS = D.classes, clsOfKey = k => (FBYKEY[k] || [])[0]?.properties.cls;
 const colorOf = r => CLS[clsOfKey(r.key)]?.color || '#888';
 const AON = new Set(store.get('cfb-areas', AREAS.map(a => a.id)).filter(a => AREA[a]));
 if (!AON.size) AREAS.forEach(a => AON.add(a.id));
-const IMGON = new Set();
+const IMGON = new Set();                                   // plan maps shown as printed (image)
+const MAPON = new Set(D.maps.map(m => m.id));              // plans switched on: their legend items and rows
 
 // ---------- page ----------
 document.title = 'Casey Fields Boulevard Plans';
@@ -144,31 +145,33 @@ map.on('load', () => {
   map.on('moveend', () => { if ($('fView').checked) render(); });
 });
 const vis = (id, on) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
-const classShown = k => VIS[k] && AON.has(CLS[k].area);
+const classShown = k => VIS[k] && AON.has(CLS[k].area) && (!CLS[k].map || MAPON.has(CLS[k].map));
 function applyVis() {
-  if (READY) { LIDS.forEach(([id, k]) => vis(id, classShown(k))); Object.keys(D.images).forEach(m => vis('img-' + m, IMGON.has(m) && AON.has(m.split(':')[0]))); vis('labels', $('lblOn').checked); }
+  if (READY) { LIDS.forEach(([id, k]) => vis(id, classShown(k))); Object.keys(D.images).forEach(m => vis('img-' + m, IMGON.has(m) && MAPON.has(m) && AON.has(m.split(':')[0]))); vis('labels', $('lblOn').checked); }
   buildAreas(); buildLayerList(); buildMapFilter(); buildChips(); render();
 }
 // plan-area switches in the header
 function buildAreas() {
-  $('areas').innerHTML = AREAS.map(a => { const n = new Set(ROWS.filter(r => r.area === a.id).map(r => r.project_id)).size;
-    return `<button class="area ${AON.has(a.id) ? 'on' : ''}" data-a="${a.id}" title="Show / hide ${esc(a.name)}"><span class="tick" style="--c:${a.colour}">${AON.has(a.id) ? '✓' : ''}</span>${esc(a.name)}<span class="n">${n}</span></button>`; }).join('');
+  $('areas').innerHTML = AREAS.map(a => { const n = ROWS.filter(r => r.area === a.id).length;
+    return `<button class="area ${AON.has(a.id) ? 'on' : ''}" data-a="${a.id}" title="Show / hide ${esc(a.name)} (${n} rows: one per project and levy component)"><span class="tick" style="--c:${a.colour}">${AON.has(a.id) ? '✓' : ''}</span>${esc(a.name)}<span class="n">${n}</span></button>`; }).join('');
   $('areas').querySelectorAll('.area').forEach(b => b.onclick = () => { const a = b.dataset.a; AON.has(a) ? AON.delete(a) : AON.add(a); store.set('cfb-areas', [...AON]);
     if (SEL && !AON.has(SEL.split(':')[0])) select(null); applyVis(); fitAll(); });
 }
 function buildLayerList() {
   const count = k => new Set(D.features.filter(f => f.properties.cls === k && f.properties.key).map(f => f.properties.key)).size;
-  const row = k => `<div class="lyr ${VIS[k] ? '' : 'off'}" data-k="${k}"><span class="sw">${swatch(CLS[k])}</span><span>${esc(CLS[k].label)}</span>${count(k) ? `<span class="n">${count(k)}</span>` : ''}</div>`;
+  const row = k => `<div class="lyr ${VIS[k] ? '' : 'off'} ${CLS[k].map && !MAPON.has(CLS[k].map) ? 'dis' : ''}" data-k="${k}"><span class="sw">${swatch(CLS[k])}</span><span>${esc(CLS[k].label)}</span>${count(k) ? `<span class="n">${count(k)}</span>` : ''}</div>`;
   $('lyr').innerHTML = AREAS.filter(a => AON.has(a.id)).map(a => `<div class="areahd"><span class="dot" style="background:${a.colour}"></span>${esc(a.name)}</div>` +
-    D.maps.filter(m => m.area === a.id).map(m => `<div class="maphd"><label class="pm" title="Show this plan map as printed, placed on the ground"><input type="checkbox" data-m="${m.id}" ${IMGON.has(m.id) ? 'checked' : ''}><span>${esc(m.title)}</span></label>${IMGON.has(m.id) ? `<div class="fit">${esc(D.images[m.id].fit.replace('boundary pixels: ', 'Placed by its boundary: ').replace(/ \(\d+ px\)/, ''))}</div>` : ''}</div>` +
+    D.maps.filter(m => m.area === a.id).map(m => `<div class="maphd"><label class="pm" title="Switch this plan's projects on or off (map and table)"><input type="checkbox" data-m="${m.id}" ${MAPON.has(m.id) ? 'checked' : ''}><span>${esc(m.title)}</span></label>${D.images[m.id] && MAPON.has(m.id) ? `<button class="printed ${IMGON.has(m.id) ? 'on' : ''}" data-i="${m.id}" title="Show the plan as printed, placed on the ground">🗺 ${IMGON.has(m.id) ? 'Hide' : 'Show'} printed plan</button>` : ''}${IMGON.has(m.id) && MAPON.has(m.id) ? `<div class="fit">${esc(D.images[m.id].fit.replace('boundary pixels: ', 'Placed by its boundary: ').replace(/ \(\d+ px\)/, ''))}</div>` : ''}</div>` +
       Object.keys(CLS).filter(k => CLS[k].map === m.id).map(row).join('')).join('') +
     Object.keys(CLS).filter(k => CLS[k].area === a.id && !CLS[k].map).map(row).join('')).join('') || '<div class="fit">Turn on a plan area at the top.</div>';
-  $('lyr').querySelectorAll('.lyr').forEach(el => el.onclick = () => { VIS[el.dataset.k] = !VIS[el.dataset.k]; applyVis(); });
-  $('lyr').querySelectorAll('.pm input').forEach(cb => cb.onchange = () => { cb.checked ? IMGON.add(cb.dataset.m) : IMGON.delete(cb.dataset.m); applyVis(); });
+  $('lyr').querySelectorAll('.lyr:not(.dis)').forEach(el => el.onclick = () => { VIS[el.dataset.k] = !VIS[el.dataset.k]; applyVis(); });
+  $('lyr').querySelectorAll('.printed').forEach(b => b.onclick = () => { const m = b.dataset.i; IMGON.has(m) ? IMGON.delete(m) : IMGON.add(m); applyVis(); });
+  $('lyr').querySelectorAll('.pm input').forEach(cb => cb.onchange = () => { cb.checked ? MAPON.add(cb.dataset.m) : MAPON.delete(cb.dataset.m);
+    if (SEL && !MAPON.has(SEL.split('|')[1])) select(null); applyVis(); });
 }
 function buildMapFilter() {
   const v = $('mapF').value;
-  $('mapF').innerHTML = '<option value="">All plan maps</option>' + D.maps.filter(m => AON.has(m.area)).map(m => `<option value="${m.id}">${esc(AREA[m.area].short)} · ${esc(m.title)}</option>`).join('');
+  $('mapF').innerHTML = '<option value="">All plan maps</option>' + D.maps.filter(m => AON.has(m.area) && MAPON.has(m.id)).map(m => `<option value="${m.id}">${esc(AREA[m.area].short)} · ${esc(m.title)}</option>`).join('');
   $('mapF').value = [...$('mapF').options].some(o => o.value === v) ? v : '';
 }
 $('lblOn').onchange = applyVis;
@@ -204,7 +207,7 @@ function showDetail(key) {
     `<div class="actions"><button class="btn" id="dz">Zoom to</button>${m && D.images[m.id] ? `<button class="btn" id="dm">${IMGON.has(m.id) ? 'Hide' : 'Show'} plan map</button>` : ''}</div>
     <div class="fit" style="margin-top:8px">${esc(m ? m.title : '')}${(FBYKEY[key] || []).length ? '' : ' · not drawn on the plan map'}</div>`;
   $('detail').classList.remove('hidden'); $('dx').onclick = () => select(null); $('dz').onclick = () => select(key, {zoom: true});
-  if ($('dm')) $('dm').onclick = () => { IMGON.has(m.id) ? IMGON.delete(m.id) : IMGON.add(m.id); applyVis(); showDetail(key); };
+  if ($('dm')) $('dm').onclick = () => { IMGON.has(m.id) ? IMGON.delete(m.id) : IMGON.add(m.id); MAPON.add(m.id); applyVis(); showDetail(key); };
 }
 
 // ---------- table, filters, columns ----------
@@ -226,7 +229,7 @@ let SORT = {k: null, dir: 1};
 function filtered() {
   const q = $('q').value.trim().toLowerCase(), mf = $('mapF').value; let inView = null;
   if ($('fView').checked && READY) { const b = map.getBounds(); inView = new Set(); D.features.forEach(f => { if (!f.properties.key) return; const x = bboxOf([f]); if (x[2] >= b.getWest() && x[0] <= b.getEast() && x[3] >= b.getSouth() && x[1] <= b.getNorth()) inView.add(f.properties.key); }); }
-  let rs = ROWS.filter(r => AON.has(r.area) && (!q || r.project_id.toLowerCase().includes(q)) && (!CATON.size || CATON.has(r.category)) && (!mf || r.map === mf) && (!inView || inView.has(r.key)));
+  let rs = ROWS.filter(r => AON.has(r.area) && MAPON.has(r.map) && (!q || r.project_id.toLowerCase().includes(q)) && (!CATON.size || CATON.has(r.category)) && (!mf || r.map === mf) && (!inView || inView.has(r.key)));
   if (SORT.k) rs = rs.slice().sort((a, b) => { const x = val(a, SORT.k), y = val(b, SORT.k); return (typeof x === 'number' || typeof y === 'number' ? (x ?? -1) - (y ?? -1) : String(x ?? '').localeCompare(String(y ?? ''), undefined, {numeric: true})) * SORT.dir; });
   return rs;
 }
@@ -284,6 +287,6 @@ $('fImp').onchange = async e => { const f = e.target.files[0]; if (!f) return; c
   (wb.Sheets.Details ? XLSX.utils.sheet_to_json(wb.Sheets.Details) : []).forEach(r => { let rid = r['Row ID']; if (rid && !ROWS.some(x => x.rid === rid)) rid = ROWS.find(x => x.rid.endsWith(':' + rid))?.rid;
     if (rid && ROWS.some(x => x.rid === rid)) { EDITS[rid] = {acquired: r['Land acquired'] ?? '', status: r['Status'] ?? r['Current status'] ?? ''}; n++; } });
   store.set(SK, EDITS); render(); if (SEL) showDetail(SEL); alert(`${n} rows restored from ${f.name}`); e.target.value = ''; };
-window.APP = {map, select, get READY() { return READY; }, get SEL() { return SEL; }, FBYKEY, AON, IMGON, applyVis};
+window.APP = {map, select, get READY() { return READY; }, get SEL() { return SEL; }, FBYKEY, AON, IMGON, MAPON, applyVis};
 applyVis();
 })();
