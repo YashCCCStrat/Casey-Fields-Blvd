@@ -25,5 +25,6 @@ pd.DataFrame(names).drop_duplicates().to_csv(OUT / 'field_names.csv', index=Fals
 for l in [l for l in layers if l.endswith('_projects')]:
     pyogrio.read_dataframe(GPKG, layer=l, read_geometry=False).to_csv(OUT / f'{l}.csv', index=False, encoding='utf-8-sig')
 with zipfile.ZipFile(ROOT / 'gis/edit/casey_fields_blvd_shapefiles.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-    for p in sorted(OUT.iterdir()): z.write(p, p.name)
+    for p in sorted(OUT.iterdir()):   # fixed timestamps: an unchanged export gives an identical zip (no empty rebuild commits)
+        zi = zipfile.ZipInfo(p.name, (2020, 1, 1, 0, 0, 0)); zi.compress_type = zipfile.ZIP_DEFLATED; z.writestr(zi, p.read_bytes())
 print(len([p for p in OUT.glob('*.shp')]), 'shapefiles written')
