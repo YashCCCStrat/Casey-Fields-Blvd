@@ -38,5 +38,5 @@ def write_app(path, data):
     clean = lambda v: None if isinstance(v, float) and v != v else v
     data['rows'] = [{k: clean(v) if not isinstance(v, list) else [clean(x) for x in v] for k, v in r.items()} for r in data['rows']]
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text('window.PLAN = ' + json.dumps(data, ensure_ascii=False) + ';\n', encoding='utf-8')
+    path.write_text('window.PLANS = (window.PLANS || []).concat([' + json.dumps(data, ensure_ascii=False) + ']);\n', encoding='utf-8')
     print(path.relative_to(path.parents[2]), path.stat().st_size // 1024, 'KB;', len(data['rows']), 'rows,', len(data['features']), 'features')

@@ -127,9 +127,9 @@ for r in F.to_crs(4326).itertuples():
 for g in bnd.to_crs(4326).geometry: fc.append(dict(type='Feature', properties=dict(cls='bnd', map=''), geometry=shapely.geometry.mapping(g)))
 tables = {'T5–T8, T11': T.drop(columns=['source']).replace({np.nan: None}).to_dict('records')}
 write_app(ROOT / 'app/collison/data.js', dict(
-    meta=dict(title='Collison Estate DCP – projects', subtitle='Figure 3 placed on the ground · Tables 5–8 and 11 · V4.1 Feb 2025', plan='Collison Estate DCP',
+    meta=dict(id='collison', short='Collison', colour='#7b4fd6', title='Collison Estate DCP – projects', subtitle='Figure 3 placed on the ground · Tables 5–8 and 11 · V4.1 Feb 2025', plan='Collison Estate DCP',
               source='Collison Estate Development Contributions Plan V4.1, February 2025', storage_key='collison-edits-v1', export_prefix='collison-projects'),
-    maps=[dict(id='fig3', title='Figure 3 · Infrastructure map – DCP items (p. 12)')],
+    maps=[dict(id='fig3', title='Figure 3 · Infrastructure Map – DCP Items')],
     images={'fig3': image_entry(G / 'georeferenced/DCPO22_fig3.tif', 'Figure 3 · Infrastructure map – DCP items (p. 12)', scale=1)},
     classes=classes, features=fc, rows=rows, tables=tables,
     columns=[dict(k='project_id', label='Project ID', t='id'), dict(k='category', label='Category'), dict(k='title', label='Title'), dict(k='description', label='Description', show=False),

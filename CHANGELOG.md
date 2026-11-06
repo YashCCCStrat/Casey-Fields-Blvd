@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-15 (later)
+### Changed
+- **One page for all plan areas** (`app/index.html`): Croskell and Collison on the same map and table. Area switches in the header (both on by default) filter map, legend, table, totals and export; any number of plan maps can be shown as printed at once (tick them in the panel, or "Show plan map" on a project's card); "All plan maps" filter in the toolbar; a "Plan area" column. Edits from the earlier per-plan pages carry over.
+- Croskell plan maps named in full: Plan 2 · Standard and Supplementary Levy Transport Construction Projects; Plan 3 · Standard Levy Community and Recreation Construction Projects; Plan 4 · Public Land Provision.
+
 ## 2026-11-15
 ### Added
 - **Collison Estate DCP** (`gis/collison/`, `app/collison/`): Figure 3 placed on the ground (median 1.8 m), all 28 mapped projects as one shape each – roads and drainage channels in the plan's colours (split at junctions by nearest traced centre line), intersections IN01–IN04 as road footprints, pipes DR11–DR17 as lines, community facility CF01 – joined to Tables 5–8 and T11 (land, construction, total, apportionment, cost to MCA, levy; totals match the printed $73,015,850 / $64,792,268 / $945,578). `tools/collison_tables.py`, `tools/build_collison.py`.

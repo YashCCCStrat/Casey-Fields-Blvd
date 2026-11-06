@@ -14,6 +14,6 @@ gis/croskell/vpa_fus_croskell.gpkg ──┘                                    
   Land acquired / Status live in the browser (localStorage) and travel via the exported Excel file.
 
 ## App (2026-11-15)
-- `app/common/viewer.js` + `viewer.css`: one viewer for every plan; each plan folder has a tiny `index.html` and its `data.js` (`window.PLAN`: meta, maps, images, classes = legend/symbology, features, rows, columns, detail fields, totals, export mapping, printed tables).
+- `app/common/viewer.js` + `viewer.css`: one viewer for every plan; `app/index.html` loads every plan's `data.js` (each appends to `window.PLANS`; ids are prefixed with the plan area when merged: meta, maps, images, classes = legend/symbology, features, rows, columns, detail fields, totals, export mapping, printed tables).
 - `tools/appdata.py`: shared helpers (`solid()` one-shape-per-item, `image_entry()` plan image + corners, `write_app()`).
 - Builders: `tools/build_croskell_gpkg.py` + `build_croskell_app.py`; `tools/collison_tables.py` + `build_collison.py`.

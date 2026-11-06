@@ -1,5 +1,8 @@
 # Project log
 
+## 2026-11-15
+- Owner wants Croskell and Collison viewable together, not chosen on a landing page. **Decision:** one page; plan areas are on/off switches; printed plan maps are independent overlays.
+
 ## 2026-11-14
 - Owner asked for intersection construction projects to look like intersections (red outlines as reference). **Decision:** derive the footprint from the named roads' OSM carriageways within the plan bar's extent, rather than widening the bar; the plan bar still decides which legs are included.
 - Owner asked for map-and-table linking (hover, click to highlight and zoom both ways, shared filters) and an Excel export in their schema (`export_schema.xlsx`). **Decision:** a static web app rather than a QGIS project, because the linking is interactive; the GeoPackage and GeoTIFFs remain for QGIS.

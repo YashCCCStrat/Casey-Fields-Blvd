@@ -119,9 +119,9 @@ for r in rows:
     r['rid'] = r['project_id'] + '|' + r['component']
 ES = json.loads((ROOT / 'data/reference/export_schema.json').read_text())
 write_app(ROOT / 'app/croskell/data.js', dict(
-    meta=dict(title='Croskell (Employment) ICP – projects', subtitle='Plans 2–4 placed on the ground · Tables 5–8 · October 2025', plan='Croskell (Employment) ICP',
+    meta=dict(id='croskell', short='Croskell', colour='#0b7a62', title='Croskell (Employment) ICP – projects', subtitle='Plans 2–4 placed on the ground · Tables 5–8 · October 2025', plan='Croskell (Employment) ICP',
               source='Croskell (Employment) Infrastructure Contributions Plan, October 2025', storage_key='croskell-edits-v1', export_prefix='croskell-projects'),
-    maps=[dict(id='plan2', title='Plan 2 · Transport construction (p. 8)'), dict(id='plan3', title='Plan 3 · Community & recreation (p. 13)'), dict(id='plan4', title='Plan 4 · Public land (p. 15)')],
+    maps=[dict(id='plan2', title='Plan 2 · Standard and Supplementary Levy Transport Construction Projects'), dict(id='plan3', title='Plan 3 · Standard Levy Community and Recreation Construction Projects'), dict(id='plan4', title='Plan 4 · Public Land Provision')],
     images=IM, classes=classes, features=feats, rows=rows, tables={k.replace('table', 'Table '): v for k, v in {k: T[k].replace({np.nan: None}).to_dict('records') for k in T}.items()},
     columns=[dict(k='project_id', label='Project ID', t='id'), dict(k='category', label='Category'), dict(k='title', label='Title'), dict(k='description', label='Description', show=False),
              dict(k='component', label='Levy component'), dict(k='table', label='Table', show=False), dict(k='staging', label='Staging', show=False), dict(k='land_ha', label='Land ha', t='num'),
